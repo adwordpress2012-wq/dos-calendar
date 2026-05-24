@@ -18,24 +18,39 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen antialiased`}>
-        <header className="sticky top-0 z-40 border-b border-white/70 bg-white/88 backdrop-blur-xl">
+        <header className="sticky top-0 z-40 border-b border-white/70 bg-white/88 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">
           <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-            <Link href="/" className="flex items-center gap-3 text-lg font-black text-slate-950">
+            <Link href="/" className="flex items-center gap-3 text-lg font-black text-slate-950 dark:text-white">
               <span className="grid h-11 w-11 place-items-center rounded-lg bg-blue-600 text-white shadow-soft-color">
                 <CalendarDays size={25} aria-hidden="true" />
               </span>
               <span>DOS Calendar</span>
             </Link>
-            <div className="flex items-center gap-2 text-sm font-bold">
-              <Link className="touch-target rounded-lg px-4 py-3 text-slate-700 hover:bg-cyan-50 hover:text-blue-700" href="/demo">
-                Demo
+            <div className="flex items-center gap-1 text-sm font-bold sm:gap-2">
+              <Link
+                className="touch-target rounded-lg bg-blue-600 px-4 py-3 text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400"
+                href="/demo"
+              >
+                DOS Calendar
               </Link>
-              <a className="hidden touch-target rounded-lg px-4 py-3 text-slate-700 hover:bg-purple-50 hover:text-purple-700 sm:inline-flex" href="https://dosworkspace.com">
+              <Link
+                className="hidden touch-target rounded-lg px-4 py-3 text-slate-700 hover:bg-cyan-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:inline-flex"
+                href="/"
+              >
+                Home
+              </Link>
+              <a
+                className="hidden touch-target rounded-lg px-4 py-3 text-slate-700 hover:bg-purple-50 hover:text-purple-700 dark:text-slate-300 dark:hover:bg-slate-800 md:inline-flex"
+                href="https://dosworkspace.com"
+              >
                 DOS Workspace
               </a>
-              <a className="touch-target rounded-lg bg-slate-950 px-4 py-3 text-white shadow-lg shadow-slate-900/15 hover:bg-blue-700" href="https://www.directiveos.com.au/contact">
+              <a
+                className="touch-target rounded-lg bg-slate-950 px-4 py-3 text-white shadow-lg shadow-slate-900/15 hover:bg-blue-700 dark:bg-purple-600 dark:hover:bg-purple-500"
+                href="https://www.directiveos.com.au/contact"
+              >
                 Contact Sales
               </a>
             </div>
