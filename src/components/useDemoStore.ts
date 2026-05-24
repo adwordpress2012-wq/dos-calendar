@@ -3,10 +3,10 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { loadDemoState, saveDemoState } from "@/components/calendarStorage";
 import type { CalendarEvent, DemoState, DemoTheme, Reminder } from "@/components/calendarTypes";
-import { DEFAULT_BUSINESS_NAME, THEME_STORAGE_KEY } from "@/components/calendarTypes";
+import { THEME_STORAGE_KEY } from "@/components/calendarTypes";
 
 const defaultSnapshot: DemoState = {
-  businessName: DEFAULT_BUSINESS_NAME,
+  businessName: "",
   events: [],
   reminders: [],
   theme: "day",
@@ -39,7 +39,7 @@ export function initDemoStore(fallbackEvents: CalendarEvent[], fallbackReminders
 export function useDemoStore(fallbackEvents: CalendarEvent[], fallbackReminders: Reminder[]) {
   const serverSnapshot = useMemo(
     () => ({
-      businessName: DEFAULT_BUSINESS_NAME,
+      businessName: "",
       events: fallbackEvents,
       reminders: fallbackReminders,
       theme: "day" as DemoTheme,
@@ -57,7 +57,7 @@ export function useDemoStore(fallbackEvents: CalendarEvent[], fallbackReminders:
   const state = useSyncExternalStore(subscribe, getClientSnapshot, () => serverSnapshot);
 
   const setBusinessName = useCallback((businessName: string) => {
-    snapshot = { ...snapshot, businessName: businessName.trim() || DEFAULT_BUSINESS_NAME };
+    snapshot = { ...snapshot, businessName };
     saveDemoState({ businessName: snapshot.businessName, events: snapshot.events, reminders: snapshot.reminders });
     emitChange();
   }, []);

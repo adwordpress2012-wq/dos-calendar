@@ -41,7 +41,7 @@ export type DemoState = {
   theme: DemoTheme;
 };
 
-export const DEFAULT_BUSINESS_NAME = "Micah your Booking Assistant";
+export const DEFAULT_BUSINESS_NAME = "Your Business";
 
 export const STORAGE_KEY = "dos-calendar-demo-state";
 export const THEME_STORAGE_KEY = "dos-calendar-demo-theme";

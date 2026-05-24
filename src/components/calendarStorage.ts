@@ -1,5 +1,5 @@
 import type { CalendarEvent, DemoState, DemoTheme, Reminder } from "@/components/calendarTypes";
-import { DEFAULT_BUSINESS_NAME, STORAGE_KEY, THEME_STORAGE_KEY } from "@/components/calendarTypes";
+import { STORAGE_KEY, THEME_STORAGE_KEY } from "@/components/calendarTypes";
 
 function normalizeEvent(event: CalendarEvent): CalendarEvent {
   return {
@@ -20,7 +20,7 @@ function normalizeReminder(reminder: Reminder): Reminder {
 export function loadDemoState(fallbackEvents: CalendarEvent[], fallbackReminders: Reminder[]): DemoState {
   if (typeof window === "undefined") {
     return {
-      businessName: DEFAULT_BUSINESS_NAME,
+      businessName: "",
       events: fallbackEvents,
       reminders: fallbackReminders,
       theme: "day",
@@ -32,7 +32,7 @@ export function loadDemoState(fallbackEvents: CalendarEvent[], fallbackReminders
 
   if (!stored) {
     return {
-      businessName: DEFAULT_BUSINESS_NAME,
+      businessName: "",
       events: fallbackEvents,
       reminders: fallbackReminders,
       theme,
@@ -42,7 +42,7 @@ export function loadDemoState(fallbackEvents: CalendarEvent[], fallbackReminders
   try {
     const parsed = JSON.parse(stored) as Partial<DemoState>;
     return {
-      businessName: parsed.businessName?.trim() || DEFAULT_BUSINESS_NAME,
+      businessName: typeof parsed.businessName === "string" ? parsed.businessName : "",
       events: parsed.events?.length ? parsed.events.map(normalizeEvent) : fallbackEvents,
       reminders: parsed.reminders?.length ? parsed.reminders.map(normalizeReminder) : fallbackReminders,
       theme,
@@ -50,7 +50,7 @@ export function loadDemoState(fallbackEvents: CalendarEvent[], fallbackReminders
   } catch {
     window.localStorage.removeItem(STORAGE_KEY);
     return {
-      businessName: DEFAULT_BUSINESS_NAME,
+      businessName: "",
       events: fallbackEvents,
       reminders: fallbackReminders,
       theme,

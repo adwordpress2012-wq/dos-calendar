@@ -21,6 +21,7 @@ import {
 import { EventDetailsPanel } from "@/components/EventDetailsPanel";
 import { EventModal } from "@/components/EventModal";
 import { MicahBookingSimulation } from "@/components/MicahBookingSimulation";
+import { MicahChatWidget, type MicahBookingDraft } from "@/components/MicahChatWidget";
 import { ReminderModal } from "@/components/ReminderModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useDemoStore } from "@/components/useDemoStore";
@@ -47,6 +48,23 @@ function nextAfternoonSlot() {
     }
   }
   return { date: toDateInput(1), time: "14:30", endTime: "15:30" };
+}
+
+function addMinutesToTime(time: string, minutesToAdd: number) {
+  const [hours = "0", minutes = "0"] = time.split(":");
+  const date = new Date();
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+  date.setMinutes(date.getMinutes() + minutesToAdd);
+  return date.toTimeString().slice(0, 5);
+}
+
+function micahEventTitle(service: string) {
+  const cleaned = service.trim();
+  const guestMatch = cleaned.match(/(\d+)\s+guests?/i);
+  if (/table/i.test(cleaned) && guestMatch) {
+    return `Table booking — ${guestMatch[1]} guests`;
+  }
+  return cleaned || "Micah SCW booking";
 }
 
 const sampleEvents: CalendarEvent[] = [
@@ -136,6 +154,7 @@ export function CalendarDemo() {
   const [simulating, setSimulating] = useState(false);
   const [animationStep, setAnimationStep] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const displayBusinessName = businessName.trim() || DEFAULT_BUSINESS_NAME;
 
   useEffect(() => {
     if (!toast) {
@@ -238,6 +257,30 @@ export function CalendarDemo() {
     setToast("Reminder created");
   }
 
+  function handleMicahBooking(draft: MicahBookingDraft, toastMessage = "Micah booked it — added to DOS Calendar") {
+    const service = draft.service.trim() || "Table for 5 guests";
+    const noteLines = ["Captured through Micah SCW demo."];
+    if (draft.notes.trim()) {
+      noteLines.push(draft.notes.trim());
+    }
+    const event: CalendarEvent = {
+      id: crypto.randomUUID(),
+      title: micahEventTitle(service),
+      customerName: draft.name.trim() || "Demo Customer",
+      phone: draft.phone.trim(),
+      serviceType: service,
+      date: draft.date || today,
+      time: draft.time || "19:00",
+      endTime: addMinutesToTime(draft.time || "19:00", 90),
+      notes: noteLines.join(" "),
+      category: "cyan",
+      source: "micah-scw",
+      status: "confirmed",
+    };
+    setEvents((current) => [event, ...current]);
+    setToast(toastMessage);
+  }
+
   function toggleReminder(id: string) {
     setReminders((current) =>
       current.map((r) => (r.id === id ? { ...r, completed: !r.completed } : r)),
@@ -258,22 +301,17 @@ export function CalendarDemo() {
 
     window.setTimeout(() => {
       const slot = nextAfternoonSlot();
-      const simulated: CalendarEvent = {
-        id: crypto.randomUUID(),
-        title: "Quote request / Booking enquiry",
-        customerName: "Sarah Johnson",
-        phone: "0412 345 678",
-        serviceType: "Quote request / Booking enquiry",
-        date: slot.date,
-        time: slot.time,
-        endTime: slot.endTime,
-        notes: "Captured by Micah SCW demo",
-        category: "cyan",
-        source: "micah-scw",
-        status: "confirmed",
-      };
-      setEvents((current) => [simulated, ...current]);
-      setToast("Micah SCW booking added to calendar");
+      handleMicahBooking(
+        {
+          name: "Sarah Johnson",
+          phone: "0412 345 678",
+          service: "Quote request / Booking enquiry",
+          date: slot.date,
+          time: slot.time,
+          notes: `Preferred finish time ${slot.endTime}.`,
+        },
+        "Micah SCW booking added to calendar",
+      );
       setSimulating(false);
       setAnimationStep(0);
     }, 2800);
@@ -346,7 +384,7 @@ export function CalendarDemo() {
               <CalendarDays size={24} aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-lg font-black leading-tight">{businessName}</p>
+              <p className="truncate text-lg font-black leading-tight">{displayBusinessName}</p>
               <p className="text-xs font-semibold text-cyan-200">DOS Calendar demo</p>
             </div>
           </div>
@@ -373,6 +411,7 @@ export function CalendarDemo() {
         </nav>
 
         <div className="space-y-3 border-t border-white/10 p-4">
+          <MicahChatWidget onBook={handleMicahBooking} />
           <div className="rounded-xl bg-gradient-to-br from-blue-600/40 to-purple-600/40 p-4 ring-1 ring-white/10">
             <p className="text-xs font-black uppercase tracking-wide text-cyan-200">This week</p>
             <p className="mt-1 text-2xl font-black">{stats.totalBookings} bookings</p>
@@ -408,7 +447,7 @@ export function CalendarDemo() {
                 <LayoutGrid size={22} aria-hidden="true" />
               </button>
               <div className="min-w-0">
-                <h1 className="truncate text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{businessName}</h1>
+                <h1 className="truncate text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{displayBusinessName}</h1>
                 <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{calendarTitle} · {visibleEvents.length} bookings</p>
               </div>
             </div>
@@ -419,8 +458,8 @@ export function CalendarDemo() {
                 <input
                   className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-900 outline-none dark:text-white"
                   value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value || DEFAULT_BUSINESS_NAME)}
-                  placeholder={DEFAULT_BUSINESS_NAME}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="Enter business name"
                   aria-label="Business name"
                 />
               </label>
@@ -625,7 +664,7 @@ export function CalendarDemo() {
               onSimulate={handleSimulateBooking}
               isAnimating={simulating}
               animationStep={animationStep}
-              businessName={businessName}
+              businessName={displayBusinessName}
             />
 
             {/* Reminders panel */}
@@ -633,7 +672,7 @@ export function CalendarDemo() {
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-black text-slate-950 dark:text-white">Reminders</h2>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Follow-ups for {businessName}</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Follow-ups for {displayBusinessName}</p>
                 </div>
                 <button
                   type="button"
@@ -700,7 +739,7 @@ export function CalendarDemo() {
 
             {/* Customer summary card */}
             <div className="theme-transition rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-purple-50 p-4 dark:border-slate-800 dark:from-blue-950/40 dark:to-purple-950/40">
-              <h3 className="font-black text-slate-950 dark:text-white">{businessName} at a glance</h3>
+              <h3 className="font-black text-slate-950 dark:text-white">{displayBusinessName} at a glance</h3>
               <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                 <li className="flex items-center gap-2">
                   <Phone size={16} className="text-blue-600 dark:text-cyan-400" aria-hidden="true" />
@@ -739,7 +778,7 @@ export function CalendarDemo() {
       <ReminderModal isOpen={reminderModalOpen} onClose={() => setReminderModalOpen(false)} onSave={handleAddReminder} />
       <EventDetailsPanel
         event={selectedEvent}
-        businessName={businessName}
+        businessName={displayBusinessName}
         onClose={() => setSelectedEvent(null)}
         onEdit={openEditEvent}
       />
