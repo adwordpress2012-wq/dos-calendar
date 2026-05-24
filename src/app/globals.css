@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f7fbff;
+  --foreground: #102033;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.2), transparent 32rem),
+    radial-gradient(circle at 85% 8%, rgba(168, 85, 247, 0.18), transparent 28rem),
+    var(--background);
+  color: var(--foreground);
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-target {
+  min-height: 48px;
+}
+
+.flow-check {
+  animation: pop-check 0.5s ease-out both;
+}
+
+@keyframes pop-check {
+  0% {
+    transform: scale(0.72);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
