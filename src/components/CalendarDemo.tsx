@@ -3,20 +3,25 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   BellPlus,
+  BedDouble,
   CalendarDays,
   CalendarPlus,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Flag,
   LayoutGrid,
   ListChecks,
+  MinusCircle,
   Phone,
   Plus,
+  RefreshCcw,
   Sparkles,
   TrendingUp,
   UserRound,
   Users,
+  XCircle,
 } from "lucide-react";
 import { EventDetailsPanel } from "@/components/EventDetailsPanel";
 import { EventModal } from "@/components/EventModal";
@@ -168,6 +173,61 @@ const sampleReminders: Reminder[] = [
 
 const viewLabels: CalendarView[] = ["day", "week", "month"];
 
+const monthStatusStyles: Record<
+  CalendarEvent["status"],
+  {
+    barClass: string;
+    badgeClass: string;
+    icon: typeof CheckCircle2;
+    strike?: boolean;
+  }
+> = {
+  confirmed: {
+    barClass: "bg-red-600 text-white shadow-red-950/20 hover:bg-red-700",
+    badgeClass: "bg-white/20 text-white",
+    icon: BedDouble,
+  },
+  requested: {
+    barClass: "bg-amber-500 text-amber-950 shadow-amber-950/10 hover:bg-amber-400",
+    badgeClass: "bg-white/35 text-amber-950",
+    icon: Clock,
+  },
+  "reschedule-requested": {
+    barClass: "bg-purple-600 text-white shadow-purple-950/20 hover:bg-purple-700",
+    badgeClass: "bg-white/20 text-white",
+    icon: RefreshCcw,
+  },
+  cancelled: {
+    barClass: "bg-red-950/75 text-red-100 shadow-red-950/20 hover:bg-red-950",
+    badgeClass: "bg-white/15 text-red-100",
+    icon: XCircle,
+    strike: true,
+  },
+  "no-show": {
+    barClass: "bg-slate-500 text-white shadow-slate-950/10 hover:bg-slate-600",
+    badgeClass: "bg-white/20 text-white",
+    icon: MinusCircle,
+  },
+  completed: {
+    barClass: "bg-blue-600 text-white shadow-blue-950/20 hover:bg-blue-700",
+    badgeClass: "bg-white/20 text-white",
+    icon: Flag,
+  },
+};
+
+type MonthBookingSegment = {
+  event: CalendarEvent;
+  rowIndex: number;
+  startColumn: number;
+  spanLength: number;
+  startsOnEventDate: boolean;
+  endsOnEventDate: boolean;
+};
+
+function isMultiDayBooking(event: CalendarEvent) {
+  return event.endDate > event.date;
+}
+
 export function CalendarDemo() {
   const { businessName, events, reminders, theme, setBusinessName, setEvents, setReminders, setTheme } =
     useDemoStore(sampleEvents, sampleReminders);
@@ -238,8 +298,10 @@ export function CalendarDemo() {
       const weekSet = new Set(weekDates);
       return sorted.filter((event) => weekSet.has(event.date));
     }
-    const monthSet = new Set(monthDates.filter((d) => d.slice(0, 7) === monthDates[15]?.slice(0, 7)));
-    return sorted.filter((event) => monthSet.has(event.date));
+    const monthDays = monthDates.filter((d) => d.slice(0, 7) === monthDates[15]?.slice(0, 7));
+    const monthStart = monthDays[0];
+    const monthEnd = monthDays[monthDays.length - 1];
+    return sorted.filter((event) => event.date <= monthEnd && event.endDate >= monthStart);
   }, [events, view, today, weekDates, monthDates]);
 
   const eventsByDate = useMemo(() => {
@@ -251,6 +313,54 @@ export function CalendarDemo() {
     }
     return map;
   }, [visibleEvents]);
+
+  const monthRows = useMemo(() => {
+    return Array.from({ length: Math.ceil(monthDates.length / 7) }, (_, rowIndex) =>
+      monthDates.slice(rowIndex * 7, rowIndex * 7 + 7),
+    );
+  }, [monthDates]);
+
+  const monthBookingSegments = useMemo(() => {
+    const segmentsByRow = new Map<number, MonthBookingSegment[]>();
+    const gridStart = monthDates[0];
+    const gridEnd = monthDates[monthDates.length - 1];
+
+    for (const event of visibleEvents) {
+      if (!isMultiDayBooking(event) || event.endDate < gridStart || event.date > gridEnd) {
+        continue;
+      }
+
+      monthRows.forEach((rowDates, rowIndex) => {
+        const rowStart = rowDates[0];
+        const rowEnd = rowDates[rowDates.length - 1];
+        if (event.date > rowEnd || event.endDate < rowStart) {
+          return;
+        }
+
+        const segmentStart = event.date > rowStart ? event.date : rowStart;
+        const segmentEnd = event.endDate < rowEnd ? event.endDate : rowEnd;
+        const startColumn = rowDates.indexOf(segmentStart) + 1;
+        const endColumn = rowDates.indexOf(segmentEnd) + 1;
+
+        if (startColumn < 1 || endColumn < startColumn) {
+          return;
+        }
+
+        const rowSegments = segmentsByRow.get(rowIndex) ?? [];
+        rowSegments.push({
+          event,
+          rowIndex,
+          startColumn,
+          spanLength: endColumn - startColumn + 1,
+          startsOnEventDate: segmentStart === event.date,
+          endsOnEventDate: segmentEnd === event.endDate,
+        });
+        segmentsByRow.set(rowIndex, rowSegments);
+      });
+    }
+
+    return segmentsByRow;
+  }, [monthDates, monthRows, visibleEvents]);
 
   const stats = useMemo(
     () => ({
@@ -712,37 +822,81 @@ export function CalendarDemo() {
                     <div key={d} className="py-2">{d}</div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {monthDates.map((date) => {
-                    const dayEvents = eventsByDate.get(date) ?? [];
-                    const inMonth = date.slice(0, 7) === (monthDates[15] ?? today).slice(0, 7);
+                <div className="space-y-1">
+                  {monthRows.map((rowDates, rowIndex) => {
+                    const rowSegments = monthBookingSegments.get(rowIndex) ?? [];
+                    const sameDayTopOffset = rowSegments.length ? `${Math.min(rowSegments.length, 3) * 1.75 + 0.25}rem` : "0.25rem";
+                    const rowMinHeight = rowSegments.length > 1 ? 112 + (Math.min(rowSegments.length, 3) - 1) * 28 : undefined;
+
                     return (
-                      <div
-                        key={date}
-                        className={`min-h-[90px] rounded-xl border p-1.5 sm:min-h-[110px] ${
-                          date === today
-                            ? "border-blue-400 bg-blue-50 dark:border-cyan-500/50 dark:bg-cyan-950/30"
-                            : inMonth
-                              ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50"
-                              : "border-transparent bg-slate-50 opacity-50 dark:bg-slate-900/30"
-                        }`}
-                      >
-                        <p className="text-xs font-black text-slate-600 dark:text-slate-400">{parseInt(date.slice(8), 10)}</p>
-                        <div className="mt-1 space-y-1">
-                          {dayEvents.slice(0, 2).map((event) => (
-                            <button
-                              key={event.id}
-                              type="button"
-                              onClick={() => setSelectedEvent(event)}
-                              className={`block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-black sm:text-xs ${categoryDots[event.category]} text-white`}
-                            >
-                              {event.time} {event.title}
-                            </button>
-                          ))}
-                          {dayEvents.length > 2 ? (
-                            <p className="text-[10px] font-bold text-slate-500">+{dayEvents.length - 2} more</p>
-                          ) : null}
+                      <div key={rowDates.join("-")} className="relative">
+                        <div className="grid grid-cols-7 gap-1">
+                          {rowDates.map((date) => {
+                            const dayEvents = (eventsByDate.get(date) ?? []).filter((event) => !isMultiDayBooking(event));
+                            const inMonth = date.slice(0, 7) === (monthDates[15] ?? today).slice(0, 7);
+
+                            return (
+                              <div
+                                key={date}
+                                className={`min-h-[90px] rounded-xl border p-1.5 sm:min-h-[110px] ${
+                                  date === today
+                                    ? "border-blue-400 bg-blue-50 dark:border-cyan-500/50 dark:bg-cyan-950/30"
+                                    : inMonth
+                                      ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50"
+                                      : "border-transparent bg-slate-50 opacity-50 dark:bg-slate-900/30"
+                                }`}
+                                style={rowMinHeight ? { minHeight: rowMinHeight } : undefined}
+                              >
+                                <p className="text-xs font-black text-slate-600 dark:text-slate-400">{parseInt(date.slice(8), 10)}</p>
+                                <div className="space-y-1" style={{ marginTop: sameDayTopOffset }}>
+                                  {dayEvents.slice(0, 2).map((event) => (
+                                    <button
+                                      key={event.id}
+                                      type="button"
+                                      onClick={() => setSelectedEvent(event)}
+                                      className={`block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-black sm:text-xs ${categoryDots[event.category]} text-white`}
+                                    >
+                                      {event.time} {event.title}
+                                    </button>
+                                  ))}
+                                  {dayEvents.length > 2 ? (
+                                    <p className="text-[10px] font-bold text-slate-500">+{dayEvents.length - 2} more</p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
+
+                        {rowSegments.length ? (
+                          <div className="pointer-events-none absolute inset-x-0 top-7 grid grid-cols-7 gap-x-1 gap-y-1">
+                            {rowSegments.map((segment) => {
+                              const statusStyle = monthStatusStyles[segment.event.status];
+                              const StatusIcon = statusStyle.icon;
+                              const roundedClass = `${segment.startsOnEventDate ? "rounded-l-lg" : "rounded-l-sm"} ${
+                                segment.endsOnEventDate ? "rounded-r-lg" : "rounded-r-sm"
+                              }`;
+
+                              return (
+                                <button
+                                  key={`${segment.event.id}-${segment.rowIndex}-${segment.startColumn}`}
+                                  type="button"
+                                  onClick={() => setSelectedEvent(segment.event)}
+                                  className={`pointer-events-auto flex min-w-0 items-center gap-1.5 px-2 py-1 text-left text-[10px] font-black shadow-md transition hover:scale-[1.01] sm:text-xs ${roundedClass} ${statusStyle.barClass}`}
+                                  style={{ gridColumn: `${segment.startColumn} / span ${segment.spanLength}` }}
+                                >
+                                  <StatusIcon size={13} className="shrink-0" aria-hidden="true" />
+                                  <span className={`min-w-0 flex-1 truncate ${statusStyle.strike ? "line-through" : ""}`}>
+                                    {segment.event.title}
+                                  </span>
+                                  <span className={`hidden shrink-0 rounded px-1.5 py-0.5 text-[9px] uppercase sm:inline ${statusStyle.badgeClass}`}>
+                                    {eventStatusLabels[segment.event.status]}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
