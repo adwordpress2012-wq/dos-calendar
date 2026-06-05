@@ -2,7 +2,17 @@
 
 import { Bell, Calendar, Edit3, Eye, Mail, Phone, UserRound, X } from "lucide-react";
 import type { CalendarEvent } from "@/components/calendarTypes";
-import { bookingTypeLabels, categoryDots, eventStatusLabels, sourceLabels } from "@/components/calendarTypes";
+import {
+  bookingTypeLabels,
+  eventStatusLabels,
+  formatBookingRangeAU,
+  formatIsoDateTimeAU,
+  getBookingDisplayName,
+  getEventLabel,
+  getLeadSourceLabel,
+  statusBadgeStyles,
+  statusDotStyles,
+} from "@/components/calendarTypes";
 import { notificationStageLabels } from "@/lib/dosCalendarCore";
 
 type EventDetailsPanelProps = {
@@ -29,15 +39,16 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-700">
           <div className="min-w-0">
             <div className="mb-2 flex items-center gap-2">
-              <span className={`h-3 w-3 rounded-full ${categoryDots[event.category]}`} />
+              <span className={`h-3 w-3 rounded-full ${statusDotStyles[event.status]}`} />
               <span className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-blue-800 dark:bg-blue-500/20 dark:text-blue-200">
-                {sourceLabels[event.source]}
+                {getLeadSourceLabel(event)}
               </span>
-              <span className="rounded-lg bg-green-100 px-2.5 py-1 text-xs font-black capitalize text-green-800 dark:bg-green-500/20 dark:text-green-200">
+              <span className={`rounded-lg px-2.5 py-1 text-xs font-black capitalize ${statusBadgeStyles[event.status]}`}>
                 {eventStatusLabels[event.status]}
               </span>
             </div>
-            <h2 className="text-2xl font-black text-slate-950 dark:text-white">{event.title}</h2>
+            <h2 className="text-2xl font-black text-slate-950 dark:text-white">{getBookingDisplayName(event)}</h2>
+            <p className="mt-1 text-base font-black text-slate-700 dark:text-slate-200">{getEventLabel(event)}</p>
             <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">{businessName} booking</p>
           </div>
           <button
@@ -56,7 +67,7 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
                 <UserRound size={14} aria-hidden="true" />
                 Customer
               </dt>
-              <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.customerName}</dd>
+              <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{getBookingDisplayName(event)}</dd>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
               <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Service</dt>
@@ -96,8 +107,7 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
                 Date &amp; time
               </dt>
               <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">
-                {event.date} · {event.time}
-                {event.endTime ? ` – ${event.endDate && event.endDate !== event.date ? `${event.endDate} · ` : ""}${event.endTime}` : ""}
+                {formatBookingRangeAU(event.date, event.time, event.endDate, event.endTime)}
               </dd>
             </div>
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">
@@ -121,7 +131,9 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
               <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Next action</dt>
               <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.nextAction.label}</dd>
-              <dd className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">{event.nextAction.dueAt}</dd>
+              <dd className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
+                {formatIsoDateTimeAU(event.nextAction.dueAt)}
+              </dd>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
               <dt className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">

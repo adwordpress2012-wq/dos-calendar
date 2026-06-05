@@ -5,7 +5,15 @@ import { useState, type FormEvent } from "react";
 import { ArrowRight, CalendarCheck, CalendarClock, CheckCircle2, Mail, MessageCircle, XCircle } from "lucide-react";
 import { toCalendarEvent } from "@/components/calendarStorage";
 import type { CalendarEvent, DemoState } from "@/components/calendarTypes";
-import { STORAGE_KEY, eventStatusLabels } from "@/components/calendarTypes";
+import {
+  STORAGE_KEY,
+  categoryForStatus,
+  eventStatusLabels,
+  formatBookingRangeAU,
+  getBookingDisplayName,
+  getEventLabel,
+  statusBadgeStyles,
+} from "@/components/calendarTypes";
 import {
   buildLifecycleNotificationEvent,
   createOperationalBooking,
@@ -88,11 +96,7 @@ function useBookingFromUrl() {
 }
 
 function formatBookingTime(booking: CalendarEvent) {
-  const endDate = booking.endDate || booking.date;
-  if (endDate !== booking.date) {
-    return `${booking.date} ${booking.time} to ${endDate} ${booking.endTime}`;
-  }
-  return `${booking.date} at ${booking.time}${booking.endTime ? `-${booking.endTime}` : ""}`;
+  return formatBookingRangeAU(booking.date, booking.time, booking.endDate, booking.endTime);
 }
 
 function notificationList(booking: CalendarEvent) {
@@ -161,9 +165,9 @@ function MicahBookingPage() {
       source: "micah",
       bookingType: "micah-created-booking",
       status: "confirmed",
-      metadata: { sourceProduct: "micah-public-booking" },
+      metadata: { sourceProduct: "micah-public-booking", leadSource: "Micah" },
     });
-    const eventRecord = toCalendarEvent(booking, "cyan");
+    const eventRecord = toCalendarEvent(booking, categoryForStatus(booking.status));
     const current = readDemoState().events ?? [];
     writeEvents([eventRecord, ...current.filter((item) => item.id !== eventRecord.id)]);
 
@@ -401,13 +405,15 @@ function BookingMini({ booking }: { booking: CalendarEvent | null }) {
   return (
     <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-950">
       <div className="flex items-start gap-3">
-        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-200">
+        <span className={`grid h-12 w-12 place-items-center rounded-2xl ${statusBadgeStyles[booking.status]}`}>
           <CalendarCheck size={24} aria-hidden="true" />
         </span>
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-500">{eventStatusLabels[booking.status]}</p>
-          <h2 className="text-2xl font-black text-slate-950 dark:text-white">{booking.title}</h2>
-          <p className="mt-1 font-bold text-slate-600 dark:text-slate-300">{booking.customerName}</p>
+          <p className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-wide ${statusBadgeStyles[booking.status]}`}>
+            {eventStatusLabels[booking.status]}
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{getBookingDisplayName(booking)}</h2>
+          <p className="mt-1 font-bold text-slate-600 dark:text-slate-300">{getEventLabel(booking)}</p>
           <p className="mt-1 font-black text-blue-700 dark:text-cyan-300">{formatBookingTime(booking)}</p>
         </div>
       </div>

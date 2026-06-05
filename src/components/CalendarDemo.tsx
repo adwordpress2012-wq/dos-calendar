@@ -30,14 +30,21 @@ import { MicahChatWidget, type MicahBookingDraft } from "@/components/MicahChatW
 import { ReminderModal } from "@/components/ReminderModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useDemoStore } from "@/components/useDemoStore";
-import type { CalendarEvent, CalendarView, CategoryColor, Reminder } from "@/components/calendarTypes";
+import type { CalendarEvent, CalendarView, Reminder } from "@/components/calendarTypes";
 import {
   bookingTypeLabels,
-  categoryDots,
-  categoryStyles,
+  categoryForStatus,
   DEFAULT_BUSINESS_NAME,
   eventStatusLabels,
-  sourceLabels,
+  formatBookingRangeAU,
+  formatDateAU,
+  formatTimeAU,
+  getBookingDisplayName,
+  getEventLabel,
+  getLeadSourceLabel,
+  statusBarStyles,
+  statusCardStyles,
+  statusDotStyles,
 } from "@/components/calendarTypes";
 import { createOperationalBooking } from "@/lib/dosCalendarCore";
 
@@ -80,10 +87,11 @@ function micahEventTitle(service: string) {
   return cleaned || "Micah SCW booking";
 }
 
-function makeSampleEvent(input: Parameters<typeof createOperationalBooking>[0], category: CategoryColor): CalendarEvent {
+function makeSampleEvent(input: Parameters<typeof createOperationalBooking>[0]): CalendarEvent {
+  const booking = createOperationalBooking(input);
   return {
-    ...createOperationalBooking(input),
-    category,
+    ...booking,
+    category: categoryForStatus(booking.status),
   };
 }
 
@@ -102,8 +110,8 @@ const sampleEvents: CalendarEvent[] = [
       bookingType: "quote-site-visit",
       source: "manual",
       status: "confirmed",
+      metadata: { leadSource: "Phone Call" },
     },
-    "blue",
   ),
   makeSampleEvent(
     {
@@ -118,9 +126,8 @@ const sampleEvents: CalendarEvent[] = [
       bookingType: "service-booking",
       source: "guestmate",
       status: "confirmed",
-      metadata: { guestCount: 4 },
+      metadata: { guestCount: 4, leadSource: "Website" },
     },
-    "orange",
   ),
   makeSampleEvent(
     {
@@ -136,8 +143,8 @@ const sampleEvents: CalendarEvent[] = [
       bookingType: "quote-site-visit",
       source: "agentmate",
       status: "confirmed",
+      metadata: { leadSource: "Referral" },
     },
-    "green",
   ),
   makeSampleEvent(
     {
@@ -153,8 +160,8 @@ const sampleEvents: CalendarEvent[] = [
       bookingType: "dos-website-demo",
       source: "dos-website",
       status: "requested",
+      metadata: { leadSource: "Website" },
     },
-    "purple",
   ),
 ];
 
@@ -183,33 +190,33 @@ const monthStatusStyles: Record<
   }
 > = {
   confirmed: {
-    barClass: "bg-red-600 text-white shadow-red-950/20 hover:bg-red-700",
+    barClass: statusBarStyles.confirmed,
     badgeClass: "bg-white/20 text-white",
     icon: BedDouble,
   },
   requested: {
-    barClass: "bg-amber-500 text-amber-950 shadow-amber-950/10 hover:bg-amber-400",
-    badgeClass: "bg-white/35 text-amber-950",
+    barClass: statusBarStyles.requested,
+    badgeClass: "bg-white/35 text-orange-950",
     icon: Clock,
   },
   "reschedule-requested": {
-    barClass: "bg-purple-600 text-white shadow-purple-950/20 hover:bg-purple-700",
+    barClass: statusBarStyles["reschedule-requested"],
     badgeClass: "bg-white/20 text-white",
     icon: RefreshCcw,
   },
   cancelled: {
-    barClass: "bg-red-950/75 text-red-100 shadow-red-950/20 hover:bg-red-950",
-    badgeClass: "bg-white/15 text-red-100",
+    barClass: statusBarStyles.cancelled,
+    badgeClass: "bg-white/20 text-white",
     icon: XCircle,
     strike: true,
   },
   "no-show": {
-    barClass: "bg-slate-500 text-white shadow-slate-950/10 hover:bg-slate-600",
+    barClass: statusBarStyles["no-show"],
     badgeClass: "bg-white/20 text-white",
     icon: MinusCircle,
   },
   completed: {
-    barClass: "bg-blue-600 text-white shadow-blue-950/20 hover:bg-blue-700",
+    barClass: statusBarStyles.completed,
     badgeClass: "bg-white/20 text-white",
     icon: Flag,
   },
@@ -290,7 +297,9 @@ export function CalendarDemo() {
   }, [weekOffset]);
 
   const visibleEvents = useMemo(() => {
-    const sorted = [...events].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+    const sorted = [...events]
+      .filter((event) => event.status !== "cancelled")
+      .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
     if (view === "day") {
       return sorted.filter((event) => event.date === today);
     }
@@ -373,7 +382,10 @@ export function CalendarDemo() {
   );
 
   const todayBookings = useMemo(
-    () => [...events].filter((event) => event.date === today).sort((a, b) => a.time.localeCompare(b.time)),
+    () =>
+      [...events]
+        .filter((event) => event.date === today && event.status !== "cancelled")
+        .sort((a, b) => a.time.localeCompare(b.time)),
     [events, today],
   );
 
@@ -459,9 +471,9 @@ export function CalendarDemo() {
         bookingType: "micah-created-booking",
         source: "micah",
         status: "confirmed",
-        metadata: { sourceProduct: draft.sourceProduct || "micah" },
+        metadata: { sourceProduct: draft.sourceProduct || "micah", leadSource: "Micah" },
       }),
-      category: "cyan",
+      category: categoryForStatus("confirmed"),
     };
     setEvents((current) => [event, ...current]);
     setToast(toastMessage);
@@ -549,28 +561,31 @@ export function CalendarDemo() {
   }
 
   function renderEventCard(event: CalendarEvent, compact = false) {
+    const bookingName = getBookingDisplayName(event);
+    const eventLabel = getEventLabel(event);
+
     return (
       <button
         key={event.id}
         type="button"
         onClick={() => setSelectedEvent(event)}
-        className={`w-full rounded-xl border p-3 text-left transition hover:scale-[1.01] hover:shadow-md ${categoryStyles[event.category]} ${compact ? "text-xs" : ""}`}
+        className={`w-full rounded-xl border p-3 text-left transition hover:scale-[1.01] hover:shadow-md ${statusCardStyles[event.status]} ${compact ? "text-xs" : ""}`}
       >
         <div className="flex items-start gap-2">
-          <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${categoryDots[event.category]}`} />
+          <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${statusDotStyles[event.status]}`} />
           <div className="min-w-0 flex-1">
-            <p className={`font-black leading-snug ${compact ? "text-xs" : "text-sm"}`}>{event.title}</p>
+            <p className={`font-black leading-snug ${compact ? "text-xs" : "text-sm"}`}>{bookingName}</p>
+            <p className="mt-0.5 truncate text-xs font-bold opacity-80">{eventLabel}</p>
             <div className="mt-2 flex flex-wrap gap-1">
               <span className="rounded bg-white/65 px-1.5 py-0.5 text-[10px] font-black uppercase text-slate-700">
-                {sourceLabels[event.source]}
+                {getLeadSourceLabel(event)}
               </span>
               <span className="rounded bg-white/65 px-1.5 py-0.5 text-[10px] font-black uppercase text-slate-700">
                 {eventStatusLabels[event.status]}
               </span>
             </div>
             <p className="mt-0.5 truncate font-bold opacity-80">
-              {event.time}
-              {event.endTime ? ` – ${event.endDate && event.endDate !== event.date ? `${event.endDate} ` : ""}${event.endTime}` : ""}
+              {formatBookingRangeAU(event.date, event.time, event.endDate, event.endTime)}
             </p>
             {!compact ? (
               <>
@@ -579,7 +594,7 @@ export function CalendarDemo() {
                   {event.customerName}
                 </p>
                 <p className="mt-1 truncate text-xs font-semibold opacity-75">
-                  {bookingTypeLabels[event.bookingType]} / {event.nextAction.label}
+                  {bookingTypeLabels[event.bookingType]}
                 </p>
               </>
             ) : null}
@@ -854,9 +869,9 @@ export function CalendarDemo() {
                                       key={event.id}
                                       type="button"
                                       onClick={() => setSelectedEvent(event)}
-                                      className={`block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-black sm:text-xs ${categoryDots[event.category]} text-white`}
+                                      className={`block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-black sm:text-xs ${statusBarStyles[event.status]}`}
                                     >
-                                      {event.time} {event.title}
+                                      {formatTimeAU(event.time)} {getBookingDisplayName(event)}
                                     </button>
                                   ))}
                                   {dayEvents.length > 2 ? (
@@ -887,7 +902,7 @@ export function CalendarDemo() {
                                 >
                                   <StatusIcon size={13} className="shrink-0" aria-hidden="true" />
                                   <span className={`min-w-0 flex-1 truncate ${statusStyle.strike ? "line-through" : ""}`}>
-                                    {segment.event.title}
+                                    {getBookingDisplayName(segment.event)} · {getEventLabel(segment.event)}
                                   </span>
                                   <span className={`hidden shrink-0 rounded px-1.5 py-0.5 text-[9px] uppercase sm:inline ${statusStyle.badgeClass}`}>
                                     {eventStatusLabels[segment.event.status]}
@@ -951,8 +966,12 @@ export function CalendarDemo() {
                       onClick={() => setSelectedEvent(event)}
                       className="rounded-xl bg-slate-50 p-3 text-left hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700"
                     >
-                      <p className="text-sm font-black text-slate-950 dark:text-white">{event.time} · {event.title}</p>
-                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{eventStatusLabels[event.status]} · {event.customerName}</p>
+                      <p className="text-sm font-black text-slate-950 dark:text-white">
+                        {formatTimeAU(event.time)} · {getBookingDisplayName(event)}
+                      </p>
+                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {eventStatusLabels[event.status]} · {getEventLabel(event)}
+                      </p>
                     </button>
                   ))
                 ) : (
@@ -971,8 +990,12 @@ export function CalendarDemo() {
                     onClick={() => setSelectedEvent(event)}
                     className="rounded-xl bg-slate-50 p-3 text-left hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700"
                   >
-                    <p className="text-sm font-black text-slate-950 dark:text-white">{event.date} · {event.time}</p>
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{event.title} · {event.customerName}</p>
+                    <p className="text-sm font-black text-slate-950 dark:text-white">
+                      {formatDateAU(event.date)} · {formatTimeAU(event.time)}
+                    </p>
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {getBookingDisplayName(event)} · {getEventLabel(event)}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -1040,7 +1063,7 @@ export function CalendarDemo() {
                             {reminder.contact}
                           </p>
                           <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
-                            {reminder.dueDate} at {reminder.dueTime}
+                            {formatDateAU(reminder.dueDate)} at {formatTimeAU(reminder.dueTime)}
                           </p>
                           {reminder.notes ? (
                             <p className="mt-2 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-400">{reminder.notes}</p>

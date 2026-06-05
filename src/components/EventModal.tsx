@@ -2,9 +2,16 @@
 
 import { FormEvent, useState } from "react";
 import { X } from "lucide-react";
-import type { CalendarEvent, CategoryColor } from "@/components/calendarTypes";
-import { bookingTypeLabels, eventStatusLabels, sourceLabels } from "@/components/calendarTypes";
-import { BOOKING_STATUSES, BOOKING_TYPE_IDS, SOURCE_SYSTEMS, createOperationalBooking } from "@/lib/dosCalendarCore";
+import type { CalendarEvent } from "@/components/calendarTypes";
+import {
+  bookingTypeLabels,
+  categoryForStatus,
+  eventStatusLabels,
+  getLeadSourceLabel,
+  leadSourceOptions,
+  sourceForLeadSource,
+} from "@/components/calendarTypes";
+import { BOOKING_STATUSES, BOOKING_TYPE_IDS, createOperationalBooking } from "@/lib/dosCalendarCore";
 
 type EventModalProps = {
   isOpen: boolean;
@@ -13,10 +20,9 @@ type EventModalProps = {
   editingEvent?: CalendarEvent | null;
 };
 
-const colorOptions: CategoryColor[] = ["blue", "cyan", "purple", "green", "orange"];
-
 function buildForm(editingEvent?: CalendarEvent | null) {
   if (editingEvent) {
+    const eventIcon = editingEvent.metadata?.eventIcon;
     return {
       title: editingEvent.title,
       customerName: editingEvent.customerName,
@@ -29,10 +35,10 @@ function buildForm(editingEvent?: CalendarEvent | null) {
       endDate: editingEvent.endDate || editingEvent.date,
       endTime: editingEvent.endTime || "15:00",
       notes: editingEvent.notes,
-      category: editingEvent.category,
       bookingType: editingEvent.bookingType,
-      source: editingEvent.source,
+      sourceLabel: getLeadSourceLabel(editingEvent),
       status: editingEvent.status,
+      eventIcon: typeof eventIcon === "string" ? eventIcon : "",
     };
   }
   const tomorrow = new Date();
@@ -49,10 +55,10 @@ function buildForm(editingEvent?: CalendarEvent | null) {
     endDate: tomorrow.toISOString().slice(0, 10),
     endTime: "15:00",
     notes: "",
-    category: "blue" as CategoryColor,
     bookingType: "service-booking" as const,
-    source: "manual" as const,
+    sourceLabel: "Manual",
     status: "confirmed" as const,
+    eventIcon: "",
   };
 }
 
@@ -90,12 +96,17 @@ function EventModalForm({
       endTime: form.endTime,
       notes: form.notes,
       bookingType: form.bookingType,
-      source: form.source,
+      source: sourceForLeadSource(form.sourceLabel),
       status: form.status,
+      metadata: {
+        ...(editingEvent?.metadata ?? {}),
+        leadSource: form.sourceLabel,
+        eventIcon: form.eventIcon.trim(),
+      },
     }, [], editingEvent?.id);
     onSave({
       ...booking,
-      category: form.category,
+      category: categoryForStatus(booking.status),
       contactId: editingEvent?.contactId ?? booking.contactId,
       createdAt: editingEvent?.createdAt ?? booking.createdAt,
     });
@@ -125,12 +136,21 @@ function EventModalForm({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
-          Event title
+          Event name
           <input
             required
             className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             value={form.title}
             onChange={(e) => updateField("title", e.target.value)}
+          />
+        </label>
+        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
+          Optional icon
+          <input
+            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            value={form.eventIcon}
+            onChange={(e) => updateField("eventIcon", e.target.value)}
+            placeholder="🌸"
           />
         </label>
         <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
@@ -246,26 +266,12 @@ function EventModalForm({
           Source
           <select
             className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            value={form.source}
-            onChange={(e) => updateField("source", e.target.value)}
+            value={form.sourceLabel}
+            onChange={(e) => updateField("sourceLabel", e.target.value)}
           >
-            {SOURCE_SYSTEMS.map((source) => (
-              <option key={source} value={source}>
-                {sourceLabels[source]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
-          Category colour
-          <select
-            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base capitalize dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-            value={form.category}
-            onChange={(e) => updateField("category", e.target.value)}
-          >
-            {colorOptions.map((color) => (
-              <option key={color} value={color}>
-                {color}
+            {leadSourceOptions.map((source) => (
+              <option key={source.label} value={source.label}>
+                {source.label}
               </option>
             ))}
           </select>
