@@ -84,7 +84,7 @@ function toBookingRow(booking: OperationalBooking) {
     title: booking.title,
     service_type: booking.serviceType,
     start_at: `${booking.date}T${booking.time}:00`,
-    end_at: `${booking.date}T${booking.endTime}:00`,
+    end_at: `${booking.endDate}T${booking.endTime}:00`,
     timezone: booking.timezone,
     notes: booking.notes || null,
     next_action_label: booking.nextAction.label,

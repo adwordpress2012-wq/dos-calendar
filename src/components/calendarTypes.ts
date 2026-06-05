@@ -29,6 +29,7 @@ export type CalendarEvent = {
   serviceType: string;
   date: string;
   time: string;
+  endDate: string;
   endTime: string;
   notes: string;
   category: CategoryColor;

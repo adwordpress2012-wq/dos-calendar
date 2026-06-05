@@ -26,6 +26,7 @@ function buildForm(editingEvent?: CalendarEvent | null) {
       serviceType: editingEvent.serviceType,
       date: editingEvent.date,
       time: editingEvent.time,
+      endDate: editingEvent.endDate || editingEvent.date,
       endTime: editingEvent.endTime || "15:00",
       notes: editingEvent.notes,
       category: editingEvent.category,
@@ -45,6 +46,7 @@ function buildForm(editingEvent?: CalendarEvent | null) {
     serviceType: "",
     date: tomorrow.toISOString().slice(0, 10),
     time: "14:00",
+    endDate: tomorrow.toISOString().slice(0, 10),
     endTime: "15:00",
     notes: "",
     category: "blue" as CategoryColor,
@@ -66,7 +68,11 @@ function EventModalForm({
   const [form, setForm] = useState(() => buildForm(editingEvent));
 
   function updateField(field: keyof typeof form, value: string) {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === "date" && (!current.endDate || current.endDate === current.date) ? { endDate: value } : {}),
+    }));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -80,6 +86,7 @@ function EventModalForm({
       serviceType: form.serviceType || "General booking",
       date: form.date,
       time: form.time,
+      endDate: form.endDate || form.date,
       endTime: form.endTime,
       notes: form.notes,
       bookingType: form.bookingType,
@@ -168,7 +175,7 @@ function EventModalForm({
           />
         </label>
         <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
-          Date
+          Start date
           <input
             type="date"
             required
@@ -185,6 +192,16 @@ function EventModalForm({
             className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             value={form.time}
             onChange={(e) => updateField("time", e.target.value)}
+          />
+        </label>
+        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
+          End date
+          <input
+            type="date"
+            required
+            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            value={form.endDate}
+            onChange={(e) => updateField("endDate", e.target.value)}
           />
         </label>
         <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">

@@ -97,7 +97,7 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
               </dt>
               <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">
                 {event.date} · {event.time}
-                {event.endTime ? ` – ${event.endTime}` : ""}
+                {event.endTime ? ` – ${event.endDate && event.endDate !== event.date ? `${event.endDate} · ` : ""}${event.endTime}` : ""}
               </dd>
             </div>
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">

@@ -10,6 +10,8 @@ export type MicahBookingDraft = {
   service: string;
   date: string;
   time: string;
+  endDate: string;
+  endTime: string;
   notes: string;
   sourceProduct?: string;
 };
@@ -29,6 +31,8 @@ const initialDraft: MicahBookingDraft = {
   service: "Table for 5 guests",
   date: todayInput(),
   time: "19:00",
+  endDate: todayInput(),
+  endTime: "20:30",
   notes: "Window seat if available",
   sourceProduct: "guestmate",
 };
@@ -40,7 +44,11 @@ export function MicahChatWidget({ onBook }: MicahChatWidgetProps) {
 
   function updateField(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target;
-    setDraft((current) => ({ ...current, [name]: value }));
+    setDraft((current) => ({
+      ...current,
+      [name]: value,
+      ...(name === "date" && (!current.endDate || current.endDate === current.date) ? { endDate: value } : {}),
+    }));
     setSuccess(false);
   }
 
@@ -175,7 +183,7 @@ export function MicahChatWidget({ onBook }: MicahChatWidgetProps) {
                 </label>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Date
+                    Start Date
                     <input
                       name="date"
                       type="date"
@@ -185,12 +193,34 @@ export function MicahChatWidget({ onBook }: MicahChatWidgetProps) {
                     />
                   </label>
                   <label className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Time
+                    Start Time
                     <input
                       name="time"
                       type="time"
                       className="touch-target rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                       value={draft.time}
+                      onChange={updateField}
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
+                    End Date
+                    <input
+                      name="endDate"
+                      type="date"
+                      className="touch-target rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                      value={draft.endDate}
+                      onChange={updateField}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
+                    End Time
+                    <input
+                      name="endTime"
+                      type="time"
+                      className="touch-target rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                      value={draft.endTime}
                       onChange={updateField}
                     />
                   </label>

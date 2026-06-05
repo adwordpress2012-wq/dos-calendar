@@ -83,6 +83,7 @@ export type OperationalBookingInput = {
   serviceType?: string;
   date: string;
   time: string;
+  endDate?: string;
   endTime?: string;
   notes?: string;
   bookingType?: BookingTypeId;
@@ -95,7 +96,7 @@ export type OperationalBookingInput = {
 export type OperationalBooking = Required<
   Pick<OperationalBookingInput, "date" | "time">
 > &
-  Omit<OperationalBookingInput, "date" | "time" | "metadata"> & {
+  Omit<OperationalBookingInput, "date" | "time" | "endDate" | "metadata"> & {
     id: string;
     title: string;
     customerName: string;
@@ -103,6 +104,7 @@ export type OperationalBooking = Required<
     email: string;
     organization: string;
     serviceType: string;
+    endDate: string;
     endTime: string;
     notes: string;
     bookingType: BookingTypeId;
@@ -337,6 +339,7 @@ export function createOperationalBooking(
     serviceType: input.serviceType?.trim() || bookingTypeDefinitions[bookingType].label,
     date: input.date,
     time: input.time,
+    endDate: input.endDate || input.date,
     endTime: input.endTime || addMinutesToTime(input.time, duration),
     notes: input.notes?.trim() || "",
     bookingType,

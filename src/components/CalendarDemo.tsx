@@ -343,7 +343,8 @@ export function CalendarDemo() {
         serviceType: service,
         date: draft.date || today,
         time: draft.time || "19:00",
-        endTime: addMinutesToTime(draft.time || "19:00", 90),
+        endDate: draft.endDate || draft.date || today,
+        endTime: draft.endTime || addMinutesToTime(draft.time || "19:00", 90),
         notes: noteLines.join(" "),
         bookingType: "micah-created-booking",
         source: "micah",
@@ -370,6 +371,8 @@ export function CalendarDemo() {
             serviceType: event.serviceType,
             preferredDate: event.date,
             preferredTime: event.time,
+            preferredEndDate: event.endDate,
+            preferredEndTime: event.endTime,
             notes: event.notes,
           },
           sourceProduct: draft.sourceProduct || "micah",
@@ -413,6 +416,8 @@ export function CalendarDemo() {
           service: "Quote request / Booking enquiry",
           date: slot.date,
           time: slot.time,
+          endDate: slot.date,
+          endTime: slot.endTime,
           notes: `Preferred finish time ${slot.endTime}.`,
         },
         "Micah booking added to DOS Calendar",
@@ -453,7 +458,10 @@ export function CalendarDemo() {
                 {eventStatusLabels[event.status]}
               </span>
             </div>
-            <p className="mt-0.5 truncate font-bold opacity-80">{event.time}{event.endTime ? ` – ${event.endTime}` : ""}</p>
+            <p className="mt-0.5 truncate font-bold opacity-80">
+              {event.time}
+              {event.endTime ? ` – ${event.endDate && event.endDate !== event.date ? `${event.endDate} ` : ""}${event.endTime}` : ""}
+            </p>
             {!compact ? (
               <>
                 <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-75">

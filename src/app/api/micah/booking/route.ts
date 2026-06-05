@@ -13,6 +13,8 @@ type MicahBookingPayload = {
     serviceType?: string;
     preferredDate?: string;
     preferredTime?: string;
+    preferredEndDate?: string;
+    preferredEndTime?: string;
     notes?: string;
   };
   sourceProduct?: string;
@@ -35,6 +37,8 @@ function toBookingInput(payload: MicahBookingPayload): OperationalBookingInput |
     serviceType: payload.request?.serviceType || "Micah-created booking",
     date,
     time,
+    endDate: payload.request?.preferredEndDate || date,
+    endTime: payload.request?.preferredEndTime,
     notes: payload.request?.notes,
     source: "micah",
     bookingType: "micah-created-booking",

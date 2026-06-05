@@ -22,16 +22,22 @@ type BookingForm = {
   service: string;
   date: string;
   time: string;
+  endDate: string;
+  endTime: string;
   notes: string;
 };
+
+const tomorrowDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const initialForm: BookingForm = {
   name: "Sarah Johnson",
   phone: "0412 345 678",
   email: "sarah@example.com",
   service: "Quote request / Booking enquiry",
-  date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  date: tomorrowDate,
   time: "14:30",
+  endDate: tomorrowDate,
+  endTime: "15:30",
   notes: "Customer asked Micah for the next clear booking path.",
 };
 
@@ -82,6 +88,10 @@ function useBookingFromUrl() {
 }
 
 function formatBookingTime(booking: CalendarEvent) {
+  const endDate = booking.endDate || booking.date;
+  if (endDate !== booking.date) {
+    return `${booking.date} ${booking.time} to ${endDate} ${booking.endTime}`;
+  }
   return `${booking.date} at ${booking.time}${booking.endTime ? `-${booking.endTime}` : ""}`;
 }
 
@@ -145,6 +155,8 @@ function MicahBookingPage() {
       serviceType: form.service,
       date: form.date,
       time: form.time,
+      endDate: form.endDate || form.date,
+      endTime: form.endTime,
       notes: form.notes,
       source: "micah",
       bookingType: "micah-created-booking",
@@ -161,7 +173,14 @@ function MicahBookingPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           customer: { name: form.name, phone: form.phone, email: form.email },
-          request: { serviceType: form.service, preferredDate: form.date, preferredTime: form.time, notes: form.notes },
+          request: {
+            serviceType: form.service,
+            preferredDate: form.date,
+            preferredTime: form.time,
+            preferredEndDate: form.endDate || form.date,
+            preferredEndTime: form.endTime,
+            notes: form.notes,
+          },
           sourceProduct: "micah-public-booking",
         }),
       });
@@ -190,8 +209,10 @@ function MicahBookingPage() {
             ["phone", "Phone", "tel"],
             ["email", "Email", "email"],
             ["service", "Service", "text"],
-            ["date", "Date", "date"],
-            ["time", "Time", "time"],
+            ["date", "Start Date", "date"],
+            ["time", "Start Time", "time"],
+            ["endDate", "End Date", "date"],
+            ["endTime", "End Time", "time"],
           ].map(([field, label, type]) => (
             <label key={field} className="grid gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
               {label}
@@ -199,7 +220,15 @@ function MicahBookingPage() {
                 required={field !== "phone"}
                 type={type}
                 value={form[field as keyof BookingForm]}
-                onChange={(e) => setForm((current) => ({ ...current, [field]: e.target.value }))}
+                onChange={(e) =>
+                  setForm((current) => ({
+                    ...current,
+                    [field]: e.target.value,
+                    ...(field === "date" && (!current.endDate || current.endDate === current.date)
+                      ? { endDate: e.target.value }
+                      : {}),
+                  }))
+                }
                 className="touch-target rounded-2xl border border-slate-300 bg-white px-4 text-base text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               />
             </label>
@@ -235,6 +264,8 @@ function LifecyclePage({ action }: { action: "reschedule" | "cancel" }) {
   const { booking, bookingId, setBooking } = useBookingFromUrl();
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [done, setDone] = useState(false);
 
   const title = action === "reschedule" ? "Request a new time." : "Cancel the booking.";
@@ -256,6 +287,8 @@ function LifecyclePage({ action }: { action: "reschedule" | "cancel" }) {
       ...booking,
       date: action === "reschedule" ? date || booking.date : booking.date,
       time: action === "reschedule" ? time || booking.time : booking.time,
+      endDate: action === "reschedule" ? endDate || booking.endDate || date || booking.date : booking.endDate,
+      endTime: action === "reschedule" ? endTime || booking.endTime : booking.endTime,
       status,
       updatedAt: new Date().toISOString(),
       notificationEvents: [nextEvent, ...booking.notificationEvents],
@@ -274,12 +307,29 @@ function LifecyclePage({ action }: { action: "reschedule" | "cancel" }) {
         {action === "reschedule" ? (
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
-              New date
-              <input type="date" required value={date || booking?.date || ""} onChange={(event) => setDate(event.target.value)} className="touch-target rounded-2xl border border-slate-300 bg-white px-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+              Start Date
+              <input
+                type="date"
+                required
+                value={date || booking?.date || ""}
+                onChange={(event) => {
+                  setDate(event.target.value);
+                  setEndDate((current) => current || event.target.value);
+                }}
+                className="touch-target rounded-2xl border border-slate-300 bg-white px-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              />
             </label>
             <label className="grid gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
-              New time
+              Start Time
               <input type="time" required value={time || booking?.time || ""} onChange={(event) => setTime(event.target.value)} className="touch-target rounded-2xl border border-slate-300 bg-white px-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+              End Date
+              <input type="date" required value={endDate || booking?.endDate || booking?.date || ""} onChange={(event) => setEndDate(event.target.value)} className="touch-target rounded-2xl border border-slate-300 bg-white px-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+              End Time
+              <input type="time" required value={endTime || booking?.endTime || ""} onChange={(event) => setEndTime(event.target.value)} className="touch-target rounded-2xl border border-slate-300 bg-white px-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
             </label>
           </div>
         ) : null}
