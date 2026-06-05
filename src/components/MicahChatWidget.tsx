@@ -6,10 +6,12 @@ import { Bot, Check, MessageCircle, Send, Sparkles, X } from "lucide-react";
 export type MicahBookingDraft = {
   name: string;
   phone: string;
+  email: string;
   service: string;
   date: string;
   time: string;
   notes: string;
+  sourceProduct?: string;
 };
 
 type MicahChatWidgetProps = {
@@ -23,10 +25,12 @@ function todayInput() {
 const initialDraft: MicahBookingDraft = {
   name: "Sarah Johnson",
   phone: "0412 345 678",
+  email: "sarah@example.com",
   service: "Table for 5 guests",
   date: todayInput(),
   time: "19:00",
   notes: "Window seat if available",
+  sourceProduct: "guestmate",
 };
 
 export function MicahChatWidget({ onBook }: MicahChatWidgetProps) {
@@ -142,11 +146,30 @@ export function MicahChatWidget({ onBook }: MicahChatWidgetProps) {
                   />
                 </label>
                 <label className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Email
+                  <input
+                    name="email"
+                    type="email"
+                    className="touch-target rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                    value={draft.email}
+                    onChange={updateField}
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
                   Guests / Service
                   <input
                     name="service"
                     className="touch-target rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                     value={draft.service}
+                    onChange={updateField}
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Source product
+                  <input
+                    name="sourceProduct"
+                    className="touch-target rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-950 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                    value={draft.sourceProduct ?? ""}
                     onChange={updateField}
                   />
                 </label>

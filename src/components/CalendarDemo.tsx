@@ -25,10 +25,18 @@ import { MicahChatWidget, type MicahBookingDraft } from "@/components/MicahChatW
 import { ReminderModal } from "@/components/ReminderModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useDemoStore } from "@/components/useDemoStore";
-import type { CalendarEvent, CalendarView, Reminder } from "@/components/calendarTypes";
-import { categoryDots, categoryStyles, DEFAULT_BUSINESS_NAME } from "@/components/calendarTypes";
+import type { CalendarEvent, CalendarView, CategoryColor, Reminder } from "@/components/calendarTypes";
+import {
+  bookingTypeLabels,
+  categoryDots,
+  categoryStyles,
+  DEFAULT_BUSINESS_NAME,
+  eventStatusLabels,
+  sourceLabels,
+} from "@/components/calendarTypes";
+import { createOperationalBooking } from "@/lib/dosCalendarCore";
 
-function toDateInput(offset: number) {
+function toDateInput(offset = 0) {
   const date = new Date();
   date.setDate(date.getDate() + offset);
   return date.toISOString().slice(0, 10);
@@ -67,63 +75,82 @@ function micahEventTitle(service: string) {
   return cleaned || "Micah SCW booking";
 }
 
+function makeSampleEvent(input: Parameters<typeof createOperationalBooking>[0], category: CategoryColor): CalendarEvent {
+  return {
+    ...createOperationalBooking(input),
+    category,
+  };
+}
+
 const sampleEvents: CalendarEvent[] = [
-  {
-    id: "plumbing-quote",
-    title: "Plumbing quote inspection",
-    customerName: "Ava Bennett",
-    phone: "0400 111 222",
-    serviceType: "Plumbing quote",
-    date: toDateInput(1),
-    time: "14:30",
-    endTime: "15:30",
-    notes: "Leaking outdoor tap and bathroom pressure check.",
-    category: "blue",
-    source: "manual",
-    status: "confirmed",
-  },
-  {
-    id: "restaurant-booking",
-    title: "Restaurant booking for 4",
-    customerName: "Noah Clarke",
-    phone: "0400 222 333",
-    serviceType: "Dinner booking",
-    date: toDateInput(0),
-    time: "18:30",
-    endTime: "20:00",
-    notes: "Window table if available.",
-    category: "orange",
-    source: "manual",
-    status: "confirmed",
-  },
-  {
-    id: "buyer-inspection",
-    title: "Real estate buyer inspection",
-    customerName: "Mia Tran",
-    phone: "0400 333 444",
-    serviceType: "Property inspection",
-    date: toDateInput(2),
-    time: "11:00",
-    endTime: "12:00",
-    notes: "Buyer wants school catchment details.",
-    category: "green",
-    source: "micah-scw",
-    status: "confirmed",
-  },
-  {
-    id: "salon-appointment",
-    title: "Salon appointment",
-    customerName: "Sophie Martin",
-    phone: "0400 444 555",
-    serviceType: "Cut and colour",
-    date: toDateInput(3),
-    time: "10:15",
-    endTime: "11:45",
-    notes: "Prefers senior stylist.",
-    category: "purple",
-    source: "manual",
-    status: "pending",
-  },
+  makeSampleEvent(
+    {
+      title: "Plumbing quote inspection",
+      customerName: "Ava Bennett",
+      phone: "0400 111 222",
+      email: "ava@example.com",
+      serviceType: "Plumbing quote",
+      date: toDateInput(1),
+      time: "14:30",
+      endTime: "15:30",
+      notes: "Leaking outdoor tap and bathroom pressure check.",
+      bookingType: "quote-site-visit",
+      source: "manual",
+      status: "confirmed",
+    },
+    "blue",
+  ),
+  makeSampleEvent(
+    {
+      title: "Restaurant booking for 4",
+      customerName: "Noah Clarke",
+      phone: "0400 222 333",
+      serviceType: "Dinner booking",
+      date: toDateInput(0),
+      time: "18:30",
+      endTime: "20:00",
+      notes: "Window table if available.",
+      bookingType: "service-booking",
+      source: "guestmate",
+      status: "confirmed",
+      metadata: { guestCount: 4 },
+    },
+    "orange",
+  ),
+  makeSampleEvent(
+    {
+      title: "Real estate buyer inspection",
+      customerName: "Mia Tran",
+      phone: "0400 333 444",
+      email: "mia@example.com",
+      serviceType: "Property inspection",
+      date: toDateInput(2),
+      time: "11:00",
+      endTime: "12:00",
+      notes: "Buyer wants school catchment details.",
+      bookingType: "quote-site-visit",
+      source: "agentmate",
+      status: "confirmed",
+    },
+    "green",
+  ),
+  makeSampleEvent(
+    {
+      title: "DOS website demo",
+      customerName: "Sophie Martin",
+      phone: "0400 444 555",
+      email: "sophie@example.com",
+      serviceType: "DOS Website Demo",
+      date: toDateInput(3),
+      time: "10:15",
+      endTime: "11:00",
+      notes: "Wants to see Micah and DOSLead workflow.",
+      bookingType: "dos-website-demo",
+      source: "dos-website",
+      status: "requested",
+    },
+    "purple",
+  ),
 ];
 
 const sampleReminders: Reminder[] = [
@@ -229,13 +256,27 @@ export function CalendarDemo() {
     () => ({
       totalBookings: events.length,
       todayBookings: events.filter((e) => e.date === today).length,
-      micahBookings: events.filter((e) => e.source === "micah-scw").length,
+      micahBookings: events.filter((e) => e.source === "micah").length,
       pendingReminders: reminders.filter((r) => !r.completed).length,
     }),
     [events, reminders, today],
   );
 
-  function handleAddEvent(event: CalendarEvent) {
+  const todayBookings = useMemo(
+    () => [...events].filter((event) => event.date === today).sort((a, b) => a.time.localeCompare(b.time)),
+    [events, today],
+  );
+
+  const upcomingBookings = useMemo(
+    () =>
+      [...events]
+        .filter((event) => event.date > today && event.status !== "cancelled")
+        .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+        .slice(0, 4),
+    [events, today],
+  );
+
+  async function handleAddEvent(event: CalendarEvent) {
     setEvents((current) => {
       const exists = current.some((e) => e.id === event.id);
       if (exists) {
@@ -250,6 +291,36 @@ export function CalendarDemo() {
       setSelectedEvent(event);
     }
     setEditingEvent(null);
+
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: event.title,
+          customerName: event.customerName,
+          phone: event.phone,
+          email: event.email,
+          organization: event.organization,
+          serviceType: event.serviceType,
+          date: event.date,
+          time: event.time,
+          endTime: event.endTime,
+          notes: event.notes,
+          bookingType: event.bookingType,
+          source: event.source,
+          status: event.status,
+          timezone: event.timezone,
+          metadata: event.metadata,
+        }),
+      });
+
+      if (!response.ok && response.status !== 202) {
+        setToast("Booking saved locally - server sync needs review");
+      }
+    } catch {
+      setToast("Booking saved locally - Supabase sync pending");
+    }
   }
 
   function handleAddReminder(reminder: Reminder) {
@@ -257,28 +328,61 @@ export function CalendarDemo() {
     setToast("Reminder created");
   }
 
-  function handleMicahBooking(draft: MicahBookingDraft, toastMessage = "Micah booked it — added to DOS Calendar") {
+  async function handleMicahBooking(draft: MicahBookingDraft, toastMessage = "Micah booked it - added to DOS Calendar") {
     const service = draft.service.trim() || "Table for 5 guests";
     const noteLines = ["Captured through Micah SCW demo."];
     if (draft.notes.trim()) {
       noteLines.push(draft.notes.trim());
     }
     const event: CalendarEvent = {
-      id: crypto.randomUUID(),
-      title: micahEventTitle(service),
-      customerName: draft.name.trim() || "Demo Customer",
-      phone: draft.phone.trim(),
-      serviceType: service,
-      date: draft.date || today,
-      time: draft.time || "19:00",
-      endTime: addMinutesToTime(draft.time || "19:00", 90),
-      notes: noteLines.join(" "),
+      ...createOperationalBooking({
+        title: micahEventTitle(service),
+        customerName: draft.name.trim() || "Demo Customer",
+        phone: draft.phone.trim(),
+        email: draft.email.trim(),
+        serviceType: service,
+        date: draft.date || today,
+        time: draft.time || "19:00",
+        endTime: addMinutesToTime(draft.time || "19:00", 90),
+        notes: noteLines.join(" "),
+        bookingType: "micah-created-booking",
+        source: "micah",
+        status: "confirmed",
+        metadata: { sourceProduct: draft.sourceProduct || "micah" },
+      }),
       category: "cyan",
-      source: "micah-scw",
-      status: "confirmed",
     };
     setEvents((current) => [event, ...current]);
     setToast(toastMessage);
+
+    try {
+      const response = await fetch("/api/micah/booking", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          customer: {
+            name: event.customerName,
+            phone: event.phone,
+            email: event.email,
+            organization: event.organization,
+          },
+          request: {
+            serviceType: event.serviceType,
+            preferredDate: event.date,
+            preferredTime: event.time,
+            notes: event.notes,
+          },
+          sourceProduct: draft.sourceProduct || "micah",
+          metadata: event.metadata,
+        }),
+      });
+
+      if (!response.ok && response.status !== 202) {
+        setToast("Booking added locally - server sync needs review");
+      }
+    } catch {
+      setToast("Booking added locally - Supabase sync pending");
+    }
   }
 
   function toggleReminder(id: string) {
@@ -305,12 +409,13 @@ export function CalendarDemo() {
         {
           name: "Sarah Johnson",
           phone: "0412 345 678",
+          email: "sarah@example.com",
           service: "Quote request / Booking enquiry",
           date: slot.date,
           time: slot.time,
           notes: `Preferred finish time ${slot.endTime}.`,
         },
-        "Micah SCW booking added to calendar",
+        "Micah booking added to DOS Calendar",
       );
       setSimulating(false);
       setAnimationStep(0);
@@ -340,12 +445,25 @@ export function CalendarDemo() {
           <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${categoryDots[event.category]}`} />
           <div className="min-w-0 flex-1">
             <p className={`font-black leading-snug ${compact ? "text-xs" : "text-sm"}`}>{event.title}</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              <span className="rounded bg-white/65 px-1.5 py-0.5 text-[10px] font-black uppercase text-slate-700">
+                {sourceLabels[event.source]}
+              </span>
+              <span className="rounded bg-white/65 px-1.5 py-0.5 text-[10px] font-black uppercase text-slate-700">
+                {eventStatusLabels[event.status]}
+              </span>
+            </div>
             <p className="mt-0.5 truncate font-bold opacity-80">{event.time}{event.endTime ? ` – ${event.endTime}` : ""}</p>
             {!compact ? (
-              <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-75">
-                <UserRound size={12} aria-hidden="true" />
-                {event.customerName}
-              </p>
+              <>
+                <p className="mt-1 flex items-center gap-1 text-xs font-semibold opacity-75">
+                  <UserRound size={12} aria-hidden="true" />
+                  {event.customerName}
+                </p>
+                <p className="mt-1 truncate text-xs font-semibold opacity-75">
+                  {bookingTypeLabels[event.bookingType]} / {event.nextAction.label}
+                </p>
+              </>
             ) : null}
           </div>
         </div>
@@ -415,7 +533,7 @@ export function CalendarDemo() {
           <div className="rounded-xl bg-gradient-to-br from-blue-600/40 to-purple-600/40 p-4 ring-1 ring-white/10">
             <p className="text-xs font-black uppercase tracking-wide text-cyan-200">This week</p>
             <p className="mt-1 text-2xl font-black">{stats.totalBookings} bookings</p>
-            <p className="text-sm font-semibold text-blue-100">{stats.micahBookings} from Micah SCW</p>
+            <p className="text-sm font-semibold text-blue-100">{stats.micahBookings} from Micah</p>
           </div>
           <div className="rounded-xl bg-white/8 p-4">
             <p className="text-xs font-black uppercase tracking-wide text-slate-400">Powered by</p>
@@ -430,7 +548,7 @@ export function CalendarDemo() {
         <div className="border-b border-cyan-200 bg-gradient-to-r from-cyan-100 via-blue-100 to-purple-100 px-4 py-3 dark:border-cyan-500/20 dark:from-cyan-950/50 dark:via-blue-950/50 dark:to-purple-950/50">
           <p className="mx-auto flex max-w-6xl items-center justify-center gap-2 text-center text-sm font-bold text-slate-800 dark:text-cyan-100 sm:text-base">
             <Sparkles size={18} className="shrink-0 text-purple-600 dark:text-purple-300" aria-hidden="true" />
-            Customer chats or calls → Micah captures details → DOS Calendar books it → business gets notified.
+            Micah → Booking → DOS Calendar → Notification → Confirmation → Reschedule / Cancel.
           </p>
         </div>
 
@@ -644,7 +762,7 @@ export function CalendarDemo() {
               {[
                 { label: "Total bookings", value: stats.totalBookings, icon: CalendarDays, color: "from-blue-500 to-cyan-500" },
                 { label: "Today", value: stats.todayBookings, icon: Clock, color: "from-green-500 to-emerald-500" },
-                { label: "Micah SCW", value: stats.micahBookings, icon: TrendingUp, color: "from-purple-500 to-violet-500" },
+                { label: "Micah", value: stats.micahBookings, icon: TrendingUp, color: "from-purple-500 to-violet-500" },
                 { label: "Reminders", value: stats.pendingReminders, icon: ListChecks, color: "from-orange-500 to-amber-500" },
               ].map((card) => (
                 <div
@@ -659,6 +777,44 @@ export function CalendarDemo() {
                 </div>
               ))}
             </div>
+
+            <aside className="theme-transition rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">Today&apos;s Bookings</h2>
+              <div className="mt-3 grid gap-2">
+                {todayBookings.length ? (
+                  todayBookings.map((event) => (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => setSelectedEvent(event)}
+                      className="rounded-xl bg-slate-50 p-3 text-left hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700"
+                    >
+                      <p className="text-sm font-black text-slate-950 dark:text-white">{event.time} · {event.title}</p>
+                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{eventStatusLabels[event.status]} · {event.customerName}</p>
+                    </button>
+                  ))
+                ) : (
+                  <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm font-bold text-slate-500 dark:border-slate-700">No bookings today.</p>
+                )}
+              </div>
+            </aside>
+
+            <aside className="theme-transition rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="text-xl font-black text-slate-950 dark:text-white">Upcoming Bookings</h2>
+              <div className="mt-3 grid gap-2">
+                {upcomingBookings.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => setSelectedEvent(event)}
+                    className="rounded-xl bg-slate-50 p-3 text-left hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700"
+                  >
+                    <p className="text-sm font-black text-slate-950 dark:text-white">{event.date} · {event.time}</p>
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{event.title} · {event.customerName}</p>
+                  </button>
+                ))}
+              </div>
+            </aside>
 
             <MicahBookingSimulation
               onSimulate={handleSimulateBooking}
@@ -743,7 +899,7 @@ export function CalendarDemo() {
               <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                 <li className="flex items-center gap-2">
                   <Phone size={16} className="text-blue-600 dark:text-cyan-400" aria-hidden="true" />
-                  Customer calls &amp; chats handled by Micah SCW
+                  Customer calls &amp; chats handled by Micah
                 </li>
                 <li className="flex items-center gap-2">
                   <CalendarDays size={16} className="text-purple-600 dark:text-purple-400" aria-hidden="true" />

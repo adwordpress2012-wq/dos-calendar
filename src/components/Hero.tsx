@@ -14,24 +14,21 @@ export function Hero() {
         <div className="max-w-4xl">
           <div className="mb-5 inline-flex items-center gap-2 rounded-lg bg-white/12 px-4 py-2 text-sm font-bold text-cyan-100 ring-1 ring-white/15">
             <Sparkles size={18} aria-hidden="true" />
-            Smart booking intake for busy teams
+            DOS Calendar Demo V1
           </div>
           <h1 className="text-4xl font-black leading-tight tracking-normal sm:text-6xl lg:text-7xl">
-            Bookings, reminders, and customer calls in one smart calendar.
+            Micah turns a customer request into a confirmed booking.
           </h1>
           <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-blue-50 sm:text-xl">
-            DOS Calendar turns customer chats, calls, reminders, and bookings into one simple operational calendar.
+            One road: booking, notification, confirmation, reschedule or cancel. Nothing else belongs in V1.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link className="touch-target inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-6 py-4 text-base font-black text-slate-950 shadow-xl shadow-cyan-950/30 hover:bg-green-300" href="/demo">
-              Try Calendar Demo <ArrowRight size={20} aria-hidden="true" />
+            <Link className="touch-target inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-6 py-4 text-base font-black text-slate-950 shadow-xl shadow-cyan-950/30 hover:bg-green-300" href="/book">
+              Book through Micah <ArrowRight size={20} aria-hidden="true" />
             </Link>
-            <a className="touch-target inline-flex items-center justify-center rounded-lg bg-white px-6 py-4 text-base font-black text-blue-700 hover:bg-orange-100" href="https://www.directiveos.com.au/contact">
-              Contact Sales
-            </a>
-            <a className="touch-target inline-flex items-center justify-center rounded-lg border border-white/25 px-6 py-4 text-base font-black text-white hover:bg-white/10" href="https://dosworkspace.com">
-              Explore DOS Workspace
-            </a>
+            <Link className="touch-target inline-flex items-center justify-center rounded-lg bg-white px-6 py-4 text-base font-black text-blue-700 hover:bg-orange-100" href="/demo">
+              Open admin calendar
+            </Link>
           </div>
         </div>
         <div className="mb-4 grid gap-4 self-end rounded-lg bg-white/10 p-4 ring-1 ring-white/20 backdrop-blur-md">

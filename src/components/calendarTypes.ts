@@ -1,16 +1,31 @@
+import type {
+  BookingStatus,
+  BookingTypeId,
+  NextAction,
+  NotificationEvent,
+  SourceSystem,
+} from "@/lib/dosCalendarCore";
+import {
+  bookingTypeDefinitions,
+  sourceLabels as operationalSourceLabels,
+  statusLabels,
+} from "@/lib/dosCalendarCore";
+
 export type CalendarView = "day" | "week" | "month";
 
 export type CategoryColor = "blue" | "cyan" | "purple" | "green" | "orange";
 
-export type EventSource = "manual" | "micah-scw" | "reminder";
+export type EventSource = SourceSystem;
 
-export type EventStatus = "confirmed" | "pending" | "completed";
+export type EventStatus = BookingStatus;
 
 export type CalendarEvent = {
   id: string;
   title: string;
   customerName: string;
   phone: string;
+  email: string;
+  organization: string;
   serviceType: string;
   date: string;
   time: string;
@@ -19,6 +34,14 @@ export type CalendarEvent = {
   category: CategoryColor;
   source: EventSource;
   status: EventStatus;
+  bookingType: BookingTypeId;
+  contactId: string;
+  timezone: string;
+  nextAction: NextAction;
+  notificationEvents: NotificationEvent[];
+  metadata: Record<string, string | number | boolean | null>;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Reminder = {
@@ -62,8 +85,10 @@ export const categoryDots: Record<CategoryColor, string> = {
   orange: "bg-orange-400",
 };
 
-export const sourceLabels: Record<EventSource, string> = {
-  manual: "Manual",
-  "micah-scw": "Micah SCW",
-  reminder: "Reminder",
-};
+export const bookingTypeLabels = Object.fromEntries(
+  Object.entries(bookingTypeDefinitions).map(([id, definition]) => [id, definition.label]),
+) as Record<BookingTypeId, string>;
+
+export const sourceLabels: Record<EventSource, string> = operationalSourceLabels;
+
+export const eventStatusLabels: Record<EventStatus, string> = statusLabels;

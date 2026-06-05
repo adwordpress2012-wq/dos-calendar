@@ -1,8 +1,9 @@
 "use client";
 
-import { Calendar, Edit3, Eye, Phone, UserRound, X } from "lucide-react";
+import { Bell, Calendar, Edit3, Eye, Mail, Phone, UserRound, X } from "lucide-react";
 import type { CalendarEvent } from "@/components/calendarTypes";
-import { categoryDots, sourceLabels } from "@/components/calendarTypes";
+import { bookingTypeLabels, categoryDots, eventStatusLabels, sourceLabels } from "@/components/calendarTypes";
+import { notificationStageLabels } from "@/lib/dosCalendarCore";
 
 type EventDetailsPanelProps = {
   event: CalendarEvent | null;
@@ -33,7 +34,7 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
                 {sourceLabels[event.source]}
               </span>
               <span className="rounded-lg bg-green-100 px-2.5 py-1 text-xs font-black capitalize text-green-800 dark:bg-green-500/20 dark:text-green-200">
-                {event.status}
+                {eventStatusLabels[event.status]}
               </span>
             </div>
             <h2 className="text-2xl font-black text-slate-950 dark:text-white">{event.title}</h2>
@@ -61,6 +62,16 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
               <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Service</dt>
               <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.serviceType}</dd>
             </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+              <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Booking type</dt>
+              <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{bookingTypeLabels[event.bookingType]}</dd>
+            </div>
+            {event.email ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Email</dt>
+                <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.email}</dd>
+              </div>
+            ) : null}
             {event.phone ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
                 <dt className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -68,6 +79,15 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
                   Phone
                 </dt>
                 <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.phone}</dd>
+              </div>
+            ) : null}
+            {event.email ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+                <dt className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <Mail size={14} aria-hidden="true" />
+                  Email
+                </dt>
+                <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.email}</dd>
               </div>
             ) : null}
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
@@ -80,12 +100,45 @@ export function EventDetailsPanel({ event, businessName, onClose, onEdit }: Even
                 {event.endTime ? ` – ${event.endTime}` : ""}
               </dd>
             </div>
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-500/30 dark:bg-blue-500/10">
+              <dt className="text-xs font-black uppercase tracking-wide text-blue-700 dark:text-blue-200">Next action</dt>
+              <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.nextAction.label}</dd>
+              <dd className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">{event.nextAction.ownerRole}</dd>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+              <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Notifications</dt>
+              <dd className="mt-2 text-sm font-semibold leading-6 text-slate-700 dark:text-slate-300">
+                {event.notificationEvents.filter((notification) => notification.status === "pending").length} pending /{" "}
+                {event.notificationEvents.filter((notification) => notification.status === "skipped").length} skipped
+              </dd>
+            </div>
             {event.notes ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
                 <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Notes</dt>
                 <dd className="mt-2 text-sm font-semibold leading-7 text-slate-700 dark:text-slate-300">{event.notes}</dd>
               </div>
             ) : null}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+              <dt className="text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Next action</dt>
+              <dd className="mt-1 text-lg font-black text-slate-950 dark:text-white">{event.nextAction.label}</dd>
+              <dd className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">{event.nextAction.dueAt}</dd>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+              <dt className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <Bell size={14} aria-hidden="true" />
+                Notification events
+              </dt>
+              <dd className="mt-3 grid gap-2">
+                {event.notificationEvents.map((notification) => (
+                  <span key={notification.id} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm font-bold dark:bg-slate-900">
+                    <span>{notificationStageLabels[notification.stage]}</span>
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-black uppercase text-green-800 dark:bg-green-500/20 dark:text-green-200">
+                      {notification.status}
+                    </span>
+                  </span>
+                ))}
+              </dd>
+            </div>
           </dl>
         </div>
 

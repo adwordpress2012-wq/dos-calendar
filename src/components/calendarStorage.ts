@@ -1,12 +1,101 @@
 import type { CalendarEvent, DemoState, DemoTheme, Reminder } from "@/components/calendarTypes";
 import { STORAGE_KEY, THEME_STORAGE_KEY } from "@/components/calendarTypes";
+import {
+  buildNextAction,
+  buildNotificationEvents,
+  inferBookingType,
+  type BookingStatus,
+  type OperationalBooking,
+  type SourceSystem,
+} from "@/lib/dosCalendarCore";
+
+function normalizeSource(source: unknown): SourceSystem {
+  if (source === "micah-scw") {
+    return "micah";
+  }
+  if (
+    source === "micah" ||
+    source === "dos-website" ||
+    source === "doslead" ||
+    source === "guestmate" ||
+    source === "quoteos" ||
+    source === "agentmate" ||
+    source === "manual"
+  ) {
+    return source;
+  }
+  return "manual";
+}
+
+function normalizeStatus(status: unknown): BookingStatus {
+  if (status === "pending") {
+    return "requested";
+  }
+  if (
+    status === "requested" ||
+    status === "confirmed" ||
+    status === "reschedule-requested" ||
+    status === "cancelled" ||
+    status === "completed" ||
+    status === "no-show"
+  ) {
+    return status;
+  }
+  return "confirmed";
+}
 
 function normalizeEvent(event: CalendarEvent): CalendarEvent {
+  const source = normalizeSource(event.source);
+  const status = normalizeStatus(event.status);
+  const bookingType = event.bookingType ?? inferBookingType({ source, serviceType: event.serviceType });
+  const contactId = event.contactId ?? crypto.randomUUID();
+  const date = event.date;
+  const time = event.time;
+
   return {
     ...event,
+    email: event.email ?? "",
+    organization: event.organization ?? "",
     endTime: event.endTime || "15:00",
-    source: event.source ?? "manual",
-    status: event.status ?? "confirmed",
+    source,
+    bookingType,
+    contactId,
+    timezone: event.timezone ?? "Australia/Sydney",
+    status,
+    nextAction: event.nextAction ?? buildNextAction(bookingType, date, time, source),
+    notificationEvents:
+      event.notificationEvents ??
+      buildNotificationEvents(event.id, date, time, Boolean(event.email), Boolean(event.phone)),
+    metadata: event.metadata ?? {},
+    createdAt: event.createdAt ?? new Date().toISOString(),
+    updatedAt: event.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+export function toCalendarEvent(booking: OperationalBooking, category: CalendarEvent["category"] = "cyan"): CalendarEvent {
+  return {
+    id: booking.id,
+    title: booking.title,
+    customerName: booking.customerName,
+    phone: booking.phone,
+    email: booking.email,
+    organization: booking.organization,
+    serviceType: booking.serviceType,
+    date: booking.date,
+    time: booking.time,
+    endTime: booking.endTime,
+    notes: booking.notes,
+    category,
+    source: booking.source,
+    status: booking.status,
+    bookingType: booking.bookingType,
+    contactId: booking.contactId,
+    timezone: booking.timezone,
+    nextAction: booking.nextAction,
+    notificationEvents: booking.notificationEvents,
+    metadata: booking.metadata,
+    createdAt: booking.createdAt,
+    updatedAt: booking.updatedAt,
   };
 }
 

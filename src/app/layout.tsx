@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "DOS Calendar",
-  description: "Bookings, reminders, and customer calls in one smart calendar.",
+  description: "Operational booking infrastructure for DOS workflows.",
 };
 
 export default function RootLayout({
@@ -33,7 +33,13 @@ export default function RootLayout({
                 className="touch-target rounded-lg bg-blue-600 px-4 py-3 text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400"
                 href="/demo"
               >
-                DOS Calendar
+                Admin
+              </Link>
+              <Link
+                className="hidden touch-target rounded-lg px-4 py-3 text-slate-700 hover:bg-cyan-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:inline-flex"
+                href="/book"
+              >
+                Book
               </Link>
               <Link
                 className="hidden touch-target rounded-lg px-4 py-3 text-slate-700 hover:bg-cyan-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800 sm:inline-flex"
@@ -41,12 +47,6 @@ export default function RootLayout({
               >
                 Home
               </Link>
-              <a
-                className="hidden touch-target rounded-lg px-4 py-3 text-slate-700 hover:bg-purple-50 hover:text-purple-700 dark:text-slate-300 dark:hover:bg-slate-800 md:inline-flex"
-                href="https://dosworkspace.com"
-              >
-                DOS Workspace
-              </a>
               <a
                 className="touch-target rounded-lg bg-slate-950 px-4 py-3 text-white shadow-lg shadow-slate-900/15 hover:bg-blue-700 dark:bg-purple-600 dark:hover:bg-purple-500"
                 href="https://www.directiveos.com.au/contact"

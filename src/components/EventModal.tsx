@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import { X } from "lucide-react";
 import type { CalendarEvent, CategoryColor } from "@/components/calendarTypes";
+import { bookingTypeLabels, eventStatusLabels, sourceLabels } from "@/components/calendarTypes";
+import { BOOKING_STATUSES, BOOKING_TYPE_IDS, SOURCE_SYSTEMS, createOperationalBooking } from "@/lib/dosCalendarCore";
 
 type EventModalProps = {
   isOpen: boolean;
@@ -19,12 +21,17 @@ function buildForm(editingEvent?: CalendarEvent | null) {
       title: editingEvent.title,
       customerName: editingEvent.customerName,
       phone: editingEvent.phone,
+      email: editingEvent.email,
+      organization: editingEvent.organization,
       serviceType: editingEvent.serviceType,
       date: editingEvent.date,
       time: editingEvent.time,
       endTime: editingEvent.endTime || "15:00",
       notes: editingEvent.notes,
       category: editingEvent.category,
+      bookingType: editingEvent.bookingType,
+      source: editingEvent.source,
+      status: editingEvent.status,
     };
   }
   const tomorrow = new Date();
@@ -33,12 +40,17 @@ function buildForm(editingEvent?: CalendarEvent | null) {
     title: "",
     customerName: "",
     phone: "",
+    email: "",
+    organization: "",
     serviceType: "",
     date: tomorrow.toISOString().slice(0, 10),
     time: "14:00",
     endTime: "15:00",
     notes: "",
     category: "blue" as CategoryColor,
+    bookingType: "service-booking" as const,
+    source: "manual" as const,
+    status: "confirmed" as const,
   };
 }
 
@@ -59,19 +71,26 @@ function EventModalForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSave({
-      id: editingEvent?.id ?? crypto.randomUUID(),
+    const booking = createOperationalBooking({
       title: form.title || "New booking",
       customerName: form.customerName || "Demo Customer",
       phone: form.phone,
+      email: form.email,
+      organization: form.organization,
       serviceType: form.serviceType || "General booking",
       date: form.date,
       time: form.time,
       endTime: form.endTime,
       notes: form.notes,
+      bookingType: form.bookingType,
+      source: form.source,
+      status: form.status,
+    }, [], editingEvent?.id);
+    onSave({
+      ...booking,
       category: form.category,
-      source: editingEvent?.source ?? "manual",
-      status: editingEvent?.status ?? "confirmed",
+      contactId: editingEvent?.contactId ?? booking.contactId,
+      createdAt: editingEvent?.createdAt ?? booking.createdAt,
     });
     onClose();
   }
@@ -124,6 +143,23 @@ function EventModalForm({
           />
         </label>
         <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
+          Email
+          <input
+            type="email"
+            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            value={form.email}
+            onChange={(e) => updateField("email", e.target.value)}
+          />
+        </label>
+        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
+          Organization
+          <input
+            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            value={form.organization}
+            onChange={(e) => updateField("organization", e.target.value)}
+          />
+        </label>
+        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
           Service type
           <input
             className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
@@ -160,6 +196,48 @@ function EventModalForm({
             value={form.endTime}
             onChange={(e) => updateField("endTime", e.target.value)}
           />
+        </label>
+        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
+          Booking type
+          <select
+            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            value={form.bookingType}
+            onChange={(e) => updateField("bookingType", e.target.value)}
+          >
+            {BOOKING_TYPE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {bookingTypeLabels[id]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
+          Status
+          <select
+            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            value={form.status}
+            onChange={(e) => updateField("status", e.target.value)}
+          >
+            {BOOKING_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {eventStatusLabels[status]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
+          Source
+          <select
+            className="touch-target rounded-xl border border-slate-300 bg-white px-4 text-base dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            value={form.source}
+            onChange={(e) => updateField("source", e.target.value)}
+          >
+            {SOURCE_SYSTEMS.map((source) => (
+              <option key={source} value={source}>
+                {sourceLabels[source]}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="grid gap-2 font-bold text-slate-700 dark:text-slate-300">
           Category colour
