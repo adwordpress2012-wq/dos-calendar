@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import {
   BellPlus,
   BedDouble,
@@ -243,6 +243,8 @@ export function CalendarDemo() {
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [initialBookingDate, setInitialBookingDate] = useState<string | null>(null);
+  const [monthActionMenu, setMonthActionMenu] = useState<{ date: string; x: number; y: number } | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [toast, setToast] = useState("");
   const [simulating, setSimulating] = useState(false);
@@ -551,11 +553,31 @@ export function CalendarDemo() {
 
   function openNewEvent() {
     setEditingEvent(null);
+    setInitialBookingDate(null);
+    setMonthActionMenu(null);
     setEventModalOpen(true);
+  }
+
+  function openNewEventForDate(date: string) {
+    setEditingEvent(null);
+    setInitialBookingDate(date);
+    setMonthActionMenu(null);
+    setEventModalOpen(true);
+  }
+
+  function openMonthActionMenu(event: MouseEvent, date: string) {
+    event.preventDefault();
+    setMonthActionMenu({
+      date,
+      x: Math.min(event.clientX, window.innerWidth - 180),
+      y: Math.min(event.clientY, window.innerHeight - 72),
+    });
   }
 
   function openEditEvent(event: CalendarEvent) {
     setEditingEvent(event);
+    setInitialBookingDate(null);
+    setMonthActionMenu(null);
     setSelectedEvent(null);
     setEventModalOpen(true);
   }
@@ -853,6 +875,17 @@ export function CalendarDemo() {
                             return (
                               <div
                                 key={date}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Add booking on ${formatDateAU(date)}`}
+                                onClick={() => openNewEventForDate(date)}
+                                onContextMenu={(event) => openMonthActionMenu(event, date)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter" || event.key === " ") {
+                                    event.preventDefault();
+                                    openNewEventForDate(date);
+                                  }
+                                }}
                                 className={`min-h-[90px] rounded-xl border p-1.5 sm:min-h-[110px] ${
                                   date === today
                                     ? "border-blue-400 bg-blue-50 dark:border-cyan-500/50 dark:bg-cyan-950/30"
@@ -868,7 +901,11 @@ export function CalendarDemo() {
                                     <button
                                       key={event.id}
                                       type="button"
-                                      onClick={() => setSelectedEvent(event)}
+                                      onClick={(clickEvent) => {
+                                        clickEvent.stopPropagation();
+                                        setSelectedEvent(event);
+                                      }}
+                                      onContextMenu={(contextEvent) => contextEvent.stopPropagation()}
                                       className={`block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-black sm:text-xs ${statusBarStyles[event.status]}`}
                                     >
                                       {formatTimeAU(event.time)} {getBookingDisplayName(event)}
@@ -896,7 +933,11 @@ export function CalendarDemo() {
                                 <button
                                   key={`${segment.event.id}-${segment.rowIndex}-${segment.startColumn}`}
                                   type="button"
-                                  onClick={() => setSelectedEvent(segment.event)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setSelectedEvent(segment.event);
+                                  }}
+                                  onContextMenu={(event) => event.stopPropagation()}
                                   className={`pointer-events-auto flex min-w-0 items-center gap-1.5 px-2 py-1 text-left text-[10px] font-black shadow-md transition hover:scale-[1.01] sm:text-xs ${roundedClass} ${statusStyle.barClass}`}
                                   style={{ gridColumn: `${segment.startColumn} / span ${segment.spanLength}` }}
                                 >
@@ -1107,14 +1148,40 @@ export function CalendarDemo() {
         </div>
       ) : null}
 
+      {monthActionMenu ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close booking action menu"
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setMonthActionMenu(null)}
+          />
+          <div
+            className="fixed z-50 w-40 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            style={{ left: monthActionMenu.x, top: monthActionMenu.y }}
+          >
+            <button
+              type="button"
+              onClick={() => openNewEventForDate(monthActionMenu.date)}
+              className="touch-target flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-black text-slate-800 hover:bg-blue-50 dark:text-slate-100 dark:hover:bg-slate-800"
+            >
+              <CalendarPlus size={16} aria-hidden="true" />
+              Add Booking
+            </button>
+          </div>
+        </>
+      ) : null}
+
       <EventModal
         isOpen={eventModalOpen}
         onClose={() => {
           setEventModalOpen(false);
           setEditingEvent(null);
+          setInitialBookingDate(null);
         }}
         onSave={handleAddEvent}
         editingEvent={editingEvent}
+        initialDate={initialBookingDate}
       />
       <ReminderModal isOpen={reminderModalOpen} onClose={() => setReminderModalOpen(false)} onSave={handleAddReminder} />
       <EventDetailsPanel

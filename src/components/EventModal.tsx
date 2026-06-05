@@ -18,9 +18,10 @@ type EventModalProps = {
   onClose: () => void;
   onSave: (event: CalendarEvent) => void;
   editingEvent?: CalendarEvent | null;
+  initialDate?: string | null;
 };
 
-function buildForm(editingEvent?: CalendarEvent | null) {
+function buildForm(editingEvent?: CalendarEvent | null, initialDate?: string | null) {
   if (editingEvent) {
     const eventIcon = editingEvent.metadata?.eventIcon;
     return {
@@ -43,6 +44,7 @@ function buildForm(editingEvent?: CalendarEvent | null) {
   }
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
+  const date = initialDate || tomorrow.toISOString().slice(0, 10);
   return {
     title: "",
     customerName: "",
@@ -50,9 +52,9 @@ function buildForm(editingEvent?: CalendarEvent | null) {
     email: "",
     organization: "",
     serviceType: "",
-    date: tomorrow.toISOString().slice(0, 10),
+    date,
     time: "14:00",
-    endDate: tomorrow.toISOString().slice(0, 10),
+    endDate: date,
     endTime: "15:00",
     notes: "",
     bookingType: "service-booking" as const,
@@ -64,14 +66,16 @@ function buildForm(editingEvent?: CalendarEvent | null) {
 
 function EventModalForm({
   editingEvent,
+  initialDate,
   onClose,
   onSave,
 }: {
   editingEvent?: CalendarEvent | null;
+  initialDate?: string | null;
   onClose: () => void;
   onSave: (event: CalendarEvent) => void;
 }) {
-  const [form, setForm] = useState(() => buildForm(editingEvent));
+  const [form, setForm] = useState(() => buildForm(editingEvent, initialDate));
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((current) => ({
@@ -292,14 +296,20 @@ function EventModalForm({
   );
 }
 
-export function EventModal({ isOpen, onClose, onSave, editingEvent }: EventModalProps) {
+export function EventModal({ isOpen, onClose, onSave, editingEvent, initialDate }: EventModalProps) {
   if (!isOpen) {
     return null;
   }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-slate-950/45 p-0 dark:bg-black/70 sm:place-items-center sm:p-4">
-      <EventModalForm key={editingEvent?.id ?? "new"} editingEvent={editingEvent} onClose={onClose} onSave={onSave} />
+      <EventModalForm
+        key={editingEvent?.id ?? `new-${initialDate ?? "default"}`}
+        editingEvent={editingEvent}
+        initialDate={initialDate}
+        onClose={onClose}
+        onSave={onSave}
+      />
     </div>
   );
 }
