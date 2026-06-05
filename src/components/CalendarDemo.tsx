@@ -634,7 +634,7 @@ export function CalendarDemo() {
         : "Today";
 
   return (
-    <div className="theme-transition flex min-h-[calc(100svh-76px)] flex-col bg-slate-50 dark:bg-slate-950 lg:flex-row">
+    <div className="dos-calendar-shell theme-transition flex min-h-[calc(100svh-76px)] flex-col bg-slate-50 dark:bg-slate-950 lg:flex-row">
       {/* Mobile sidebar overlay */}
       {sidebarOpen ? (
         <button
@@ -700,7 +700,7 @@ export function CalendarDemo() {
       {/* Main content */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Sales pitch banner */}
-        <div className="border-b border-cyan-200 bg-gradient-to-r from-cyan-100 via-blue-100 to-purple-100 px-4 py-3 dark:border-cyan-500/20 dark:from-cyan-950/50 dark:via-blue-950/50 dark:to-purple-950/50">
+        <div className="dos-sales-banner border-b border-cyan-200 bg-gradient-to-r from-cyan-100 via-blue-100 to-purple-100 px-4 py-3 dark:border-cyan-500/20 dark:from-cyan-950/50 dark:via-blue-950/50 dark:to-purple-950/50">
           <p className="mx-auto flex max-w-6xl items-center justify-center gap-2 text-center text-sm font-bold text-slate-800 dark:text-cyan-100 sm:text-base">
             <Sparkles size={18} className="shrink-0 text-purple-600 dark:text-purple-300" aria-hidden="true" />
             Micah → Booking → DOS Calendar → Notification → Confirmation → Reschedule / Cancel.
@@ -708,25 +708,25 @@ export function CalendarDemo() {
         </div>
 
         {/* Top toolbar */}
-        <header className="theme-transition sticky top-[76px] z-20 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 sm:px-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
+        <header className="dos-calendar-toolbar theme-transition sticky top-[76px] z-20 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 sm:px-6">
+          <div className="dos-calendar-toolbar-inner flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="dos-calendar-title-row flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="touch-target grid h-12 w-12 place-items-center rounded-xl bg-slate-100 text-slate-700 lg:hidden dark:bg-slate-800 dark:text-slate-200"
+                className="dos-menu-button touch-target grid h-12 w-12 place-items-center rounded-xl bg-slate-100 text-slate-700 lg:hidden dark:bg-slate-800 dark:text-slate-200"
                 aria-label="Open sidebar"
               >
                 <LayoutGrid size={22} aria-hidden="true" />
               </button>
               <div className="min-w-0">
-                <h1 className="truncate text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{displayBusinessName}</h1>
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{calendarTitle} · {visibleEvents.length} bookings</p>
+                <h1 className="dos-calendar-title truncate text-xl font-black text-slate-950 dark:text-white sm:text-2xl">{displayBusinessName}</h1>
+                <p className="dos-calendar-subtitle text-sm font-semibold text-slate-500 dark:text-slate-400">{calendarTitle} · {visibleEvents.length} bookings</p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <label className="flex min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800 sm:min-w-[220px] sm:flex-none">
+            <div className="dos-calendar-actions flex flex-wrap items-center gap-2 sm:gap-3">
+              <label className="dos-business-field flex min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800 sm:min-w-[220px] sm:flex-none">
                 <span className="shrink-0 text-xs font-black uppercase text-slate-500 dark:text-slate-400">Business</span>
                 <input
                   className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-900 outline-none dark:text-white"
@@ -740,16 +740,16 @@ export function CalendarDemo() {
               <button
                 type="button"
                 onClick={openNewEvent}
-                className="touch-target inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-md hover:bg-blue-700"
+                className="dos-action-button touch-target inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-md hover:bg-blue-700"
               >
                 <CalendarPlus size={18} aria-hidden="true" />
-                <span className="hidden sm:inline">New Booking</span>
+                <span className="hidden sm:inline">Add Booking</span>
                 <span className="sm:hidden">Add</span>
               </button>
               <button
                 type="button"
                 onClick={() => setReminderModalOpen(true)}
-                className="touch-target inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-3 text-sm font-black text-white shadow-md hover:bg-green-600"
+                className="dos-action-button touch-target inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-4 py-3 text-sm font-black text-white shadow-md hover:bg-green-600"
               >
                 <BellPlus size={18} aria-hidden="true" />
                 <span className="hidden sm:inline">Add Reminder</span>
@@ -758,14 +758,14 @@ export function CalendarDemo() {
           </div>
 
           {/* View switcher + navigation */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="grid grid-cols-3 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          <div className="dos-calendar-view-nav mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="dos-view-switcher grid grid-cols-3 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
               {viewLabels.map((label) => (
                 <button
                   key={label}
                   type="button"
                   onClick={() => setView(label)}
-                  className={`touch-target rounded-lg px-4 py-2.5 text-sm font-black capitalize ${
+                  className={`dos-view-button touch-target rounded-lg px-4 py-2.5 text-sm font-black capitalize ${
                     view === label
                       ? "bg-blue-600 text-white shadow"
                       : "text-slate-700 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-700"
@@ -780,7 +780,7 @@ export function CalendarDemo() {
                 <button
                   type="button"
                   onClick={() => setWeekOffset((o) => o - 1)}
-                  className="touch-target grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+                  className="dos-date-nav-button touch-target grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
                   aria-label="Previous"
                 >
                   <ChevronLeft size={20} aria-hidden="true" />
@@ -788,14 +788,14 @@ export function CalendarDemo() {
                 <button
                   type="button"
                   onClick={() => setWeekOffset(0)}
-                  className="touch-target rounded-xl px-4 py-2.5 text-sm font-black text-blue-600 dark:text-cyan-400"
+                  className="dos-today-button touch-target rounded-xl px-4 py-2.5 text-sm font-black text-blue-600 dark:text-cyan-400"
                 >
                   Today
                 </button>
                 <button
                   type="button"
                   onClick={() => setWeekOffset((o) => o + 1)}
-                  className="touch-target grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
+                  className="dos-date-nav-button touch-target grid h-11 w-11 place-items-center rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"
                   aria-label="Next"
                 >
                   <ChevronRight size={20} aria-hidden="true" />
@@ -805,14 +805,14 @@ export function CalendarDemo() {
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-5 p-4 sm:p-6 xl:flex-row">
+        <div className="dos-calendar-main flex flex-1 flex-col gap-5 p-4 sm:p-6 xl:flex-row">
           {/* Calendar grid area */}
-          <section className="theme-transition min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <section className="dos-calendar-grid theme-transition min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             {view === "week" ? (
-              <div className="overflow-x-auto">
-                <div className="grid min-w-[720px] grid-cols-7 gap-2">
+              <div className="dos-week-scroll overflow-x-auto">
+                <div className="dos-week-grid grid min-w-[720px] grid-cols-7 gap-2">
                   {weekDates.map((date) => (
-                    <div key={date} className="min-h-[280px]">
+                    <div key={date} className="dos-week-day min-h-[280px]">
                       <div
                         className={`mb-2 rounded-xl px-2 py-2 text-center ${
                           date === today
@@ -853,8 +853,8 @@ export function CalendarDemo() {
             ) : null}
 
             {view === "month" ? (
-              <div>
-                <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+              <div className="dos-month-grid">
+                <div className="dos-month-weekdays mb-2 grid grid-cols-7 gap-1 text-center text-xs font-black uppercase text-slate-500 dark:text-slate-400">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
                     <div key={d} className="py-2">{d}</div>
                   ))}
@@ -886,7 +886,7 @@ export function CalendarDemo() {
                                     openNewEventForDate(date);
                                   }
                                 }}
-                                className={`min-h-[90px] rounded-xl border p-1.5 sm:min-h-[110px] ${
+                                className={`dos-month-cell min-h-[90px] rounded-xl border p-1.5 sm:min-h-[110px] ${
                                   date === today
                                     ? "border-blue-400 bg-blue-50 dark:border-cyan-500/50 dark:bg-cyan-950/30"
                                     : inMonth
@@ -974,7 +974,7 @@ export function CalendarDemo() {
           </section>
 
           {/* Right panel */}
-          <div className="grid w-full shrink-0 content-start gap-5 xl:w-[380px]">
+          <div className="dos-calendar-side-panel grid w-full shrink-0 content-start gap-5 xl:w-[380px]">
             {/* Summary cards */}
             <div className="grid grid-cols-2 gap-3">
               {[
